@@ -1,0 +1,48 @@
+### Secrets (never commit these) ###
+.env
+*.env
+!.env.example
+discord_token.txt
+*_token.txt
+config.properties
+!config.properties.example
+*.pem
+*.key
+credentials.json
+
+### Runtime data ###
+# Written by the bot at runtime; contains live server and guild data.
+data/
+follows.json
+markets.json
+settings.json
+cached_markers.json
+claim_snaps/
+*.fp
+
+### Generated output ###
+# Rendered map images are regenerated on demand and are never source.
+*.png
+!src/test/resources/**/*.png
+out/
+
+### Large assets fetched at build time, not versioned (see docs on base maps) ###
+basemaps/
+
+### Build ###
+target/
+build/
+
+### Editors ###
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+### OS ###
+.DS_Store
+Thumbs.db

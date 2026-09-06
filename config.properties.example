@@ -1,0 +1,34 @@
+# Copy to config.properties and fill in. That file is gitignored; keep it that way.
+# Secrets do NOT belong here. Bot tokens come from the environment (see .env.example).
+
+### Discord ###
+# Main Stoneworks guild. The admin bot registers its commands here only.
+discord.guild.id=YOUR_GUILD_ID
+# Channel the bot mirrors its console output to. Blank disables mirroring.
+discord.channel.console=
+# Which bot owns the presence/status line: public or admin.
+discord.presence.owner=public
+
+### Map data source ###
+api.markers.url=https://map.stoneworks.gg/abex/tiles/minecraft_overworld/markers.json
+
+### Feature toggles (runtime-overridable; these are startup defaults) ###
+features.follows.enabled=true
+features.markets.enabled=false
+features.bans.enabled=true
+features.feedback.enabled=true
+
+### Paths ###
+paths.data.dir=data
+file.basemap=basemaps/abex_base.png
+
+### Polling ###
+# One fetch per cycle for the whole process, both bots included.
+monitoring.interval.minutes=1
+# Safety valve: more added+removed claims than this in one cycle is treated as a
+# partial/bad fetch and skipped rather than trusted.
+monitoring.max.claim.churn=10
+
+### Limits ###
+max.concurrent.operations=3
+command.cooldown.seconds=5
