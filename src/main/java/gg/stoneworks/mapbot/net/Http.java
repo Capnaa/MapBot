@@ -8,7 +8,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Shared transport policy for every outbound request.
@@ -22,7 +23,7 @@ import java.util.logging.Logger;
  */
 final class Http {
 
-    private static final Logger LOG = Logger.getLogger(Http.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(Http.class);
 
     /** Identifies this bot to the operators of everything it calls. Unversioned on purpose: it names who is calling, not what build. */
     private static final String PRODUCT = "MapBot";
@@ -96,7 +97,7 @@ final class Http {
                 // Remember it: if this was the last attempt the caller should see the real cause,
                 // not a synthetic "attempts exhausted".
                 lastTransportFailure = e;
-                LOG.warning(() -> "Request to " + request.uri() + " failed: " + e);
+                LOG.warn("Request to {} failed: {}", request.uri(), e.toString());
                 continue;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -104,7 +105,7 @@ final class Http {
             }
 
             if (!response.uri().equals(request.uri())) {
-                LOG.info(() -> "Redirected: " + request.uri() + " to " + response.uri());
+                LOG.info("Redirected: {} to {}", request.uri(), response.uri());
             }
 
             int status = response.statusCode();
@@ -112,12 +113,12 @@ final class Http {
 
             if (status == 429 && !last) {
                 Duration wait = retryAfter(response).orElse(backoffWithJitter(attempt + 1, baseDelay, maxDelay));
-                LOG.warning(() -> "Rate limited by " + request.uri() + "; waiting " + wait);
+                LOG.warn("Rate limited by {}; waiting {}", request.uri(), wait);
                 sleep(wait);
                 continue;
             }
             if (status >= 500 && status < 600 && !last) {
-                LOG.warning(() -> "Server error " + status + " from " + request.uri() + "; retrying");
+                LOG.warn("Server error {} from {}; retrying", status, request.uri());
                 continue;
             }
             return response;

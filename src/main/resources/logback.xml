@@ -1,0 +1,18 @@
+<!--
+  Console output only. The bot's Discord log mirror is planned as a second appender attached here,
+  which is the reason for choosing logback over a bare slf4j binding.
+-->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %-5level %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- JDA logs every gateway event at DEBUG, which drowns everything else. -->
+    <logger name="net.dv8tion.jda" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

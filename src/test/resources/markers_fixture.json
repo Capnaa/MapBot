@@ -1,0 +1,1091 @@
+[
+ {
+  "hide": false,
+  "z_index": 0,
+  "name": "Spawn",
+  "control": true,
+  "id": "squaremap-spawn_icon",
+  "order": 0,
+  "timestamp": 1788696209038,
+  "markers": [
+   {
+    "tooltip_anchor": {
+     "x": 0,
+     "z": -8
+    },
+    "size": {
+     "x": 16,
+     "z": 16
+    },
+    "anchor": {
+     "x": 8,
+     "z": 8
+    },
+    "tooltip": "Spawn",
+    "icon": "squaremap-spawn_icon",
+    "type": "icon",
+    "point": {
+     "x": 64,
+     "z": 48
+    }
+   }
+  ]
+ },
+ {
+  "hide": false,
+  "z_index": 1,
+  "name": "World Border",
+  "control": true,
+  "id": "squaremap-worldborder",
+  "order": 1,
+  "timestamp": 1788696209039,
+  "markers": [
+   {
+    "color": "#ff0000",
+    "tooltip": "World Border",
+    "type": "polyline",
+    "points": [
+     {
+      "x": -11888,
+      "z": -10037
+     },
+     {
+      "x": 8186,
+      "z": -10037
+     },
+     {
+      "x": 8186,
+      "z": 10037
+     },
+     {
+      "x": -11888,
+      "z": 10037
+     },
+     {
+      "x": -11888,
+      "z": -10037
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "hide": false,
+  "z_index": 250,
+  "name": "Lands",
+  "control": true,
+  "id": "lands_world",
+  "order": 5,
+  "timestamp": 1788717813949,
+  "markers": [
+   {
+    "fillColor": "#00ff00",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Holy_Dingle</span><br/></span>Settlement of AndersnD.</div><ul><li>Level: Settlement</li><li>Balance: $329,241.00</li><li>Chunks: 24</li><li>Created at: 08/15/2026 12:42</li><li>Players (3): AndersnD, _Zola8, Chick3nMuncher</li><li>Allies: </li><li>Enemies: </li></ul>\n",
+    "color": "#009933",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Holy_Dingle</span><br/></span>Settlement of AndersnD.</div><ul><li>Level: Settlement</li><li>Balance: $329,241.00</li><li>Chunks: 24</li><li>Created at: 08/15/2026 12:42</li><li>Players (3): AndersnD, _Zola8, Chick3nMuncher</li><li>Allies: </li><li>Enemies: </li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": 8064,
+       "z": -2064
+      },
+      {
+       "x": 8080,
+       "z": -2064
+      },
+      {
+       "x": 8080,
+       "z": -2096
+      },
+      {
+       "x": 8112,
+       "z": -2096
+      },
+      {
+       "x": 8112,
+       "z": -2112
+      },
+      {
+       "x": 8160,
+       "z": -2112
+      },
+      {
+       "x": 8160,
+       "z": -2032
+      },
+      {
+       "x": 8080,
+       "z": -2032
+      },
+      {
+       "x": 8080,
+       "z": -2048
+      },
+      {
+       "x": 8064,
+       "z": -2048
+      }
+     ]
+    ]
+   },
+   {
+    "fillColor": "#ffffff",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Zigumart</span><br /></span>Settlement of Deft710.</div><ul><li>Level: Settlement</li><li>Balance: $20,542.50</li><li>Chunks: 127</li><li>Created at: 11/29/2025 01:01</li><li>Players (4): Deft710, Foxy_0, John_Enovatha, xavierenderman5</li></ul><p><strong>This land belongs to nation The_Crescent_Moon:</strong></p><ul><li>Level: Federation</li><li>Capital: Zigumart</li><li>Founded at: 06/10/2026 03:43</li><li>Lands (amount: 3, players: 16): Zigumart, New_eunaxia, -Commisary-</li></ul>\n",
+    "color": "#ffffff",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Zigumart</span><br /></span>Settlement of Deft710.</div><ul><li>Level: Settlement</li><li>Balance: $20,542.50</li><li>Chunks: 127</li><li>Created at: 11/29/2025 01:01</li><li>Players (4): Deft710, Foxy_0, John_Enovatha, xavierenderman5</li></ul><p><strong>This land belongs to nation The_Crescent_Moon:</strong></p><ul><li>Level: Federation</li><li>Capital: Zigumart</li><li>Founded at: 06/10/2026 03:43</li><li>Lands (amount: 3, players: 16): Zigumart, New_eunaxia, -Commisary-</li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": -11760,
+       "z": 6704
+      },
+      {
+       "x": -11744,
+       "z": 6704
+      },
+      {
+       "x": -11744,
+       "z": 6608
+      },
+      {
+       "x": -11728,
+       "z": 6608
+      },
+      {
+       "x": -11728,
+       "z": 6592
+      },
+      {
+       "x": -11744,
+       "z": 6592
+      },
+      {
+       "x": -11744,
+       "z": 6560
+      },
+      {
+       "x": -11728,
+       "z": 6560
+      },
+      {
+       "x": -11728,
+       "z": 6544
+      },
+      {
+       "x": -11696,
+       "z": 6544
+      },
+      {
+       "x": -11696,
+       "z": 6528
+      },
+      {
+       "x": -11680,
+       "z": 6528
+      },
+      {
+       "x": -11680,
+       "z": 6512
+      },
+      {
+       "x": -11664,
+       "z": 6512
+      },
+      {
+       "x": -11664,
+       "z": 6496
+      },
+      {
+       "x": -11600,
+       "z": 6496
+      },
+      {
+       "x": -11600,
+       "z": 6528
+      },
+      {
+       "x": -11616,
+       "z": 6528
+      },
+      {
+       "x": -11616,
+       "z": 6592
+      },
+      {
+       "x": -11632,
+       "z": 6592
+      },
+      {
+       "x": -11632,
+       "z": 6608
+      },
+      {
+       "x": -11584,
+       "z": 6608
+      },
+      {
+       "x": -11584,
+       "z": 6704
+      },
+      {
+       "x": -11600,
+       "z": 6704
+      },
+      {
+       "x": -11600,
+       "z": 6752
+      },
+      {
+       "x": -11744,
+       "z": 6752
+      },
+      {
+       "x": -11744,
+       "z": 6720
+      },
+      {
+       "x": -11760,
+       "z": 6720
+      }
+     ],
+     [
+      {
+       "x": -11632,
+       "z": 6672
+      },
+      {
+       "x": -11616,
+       "z": 6672
+      },
+      {
+       "x": -11616,
+       "z": 6688
+      },
+      {
+       "x": -11632,
+       "z": 6688
+      }
+     ],
+     [
+      {
+       "x": -11712,
+       "z": 6704
+      },
+      {
+       "x": -11664,
+       "z": 6704
+      },
+      {
+       "x": -11664,
+       "z": 6720
+      },
+      {
+       "x": -11712,
+       "z": 6720
+      }
+     ]
+    ]
+   },
+   {
+    "fillColor": "#aa0000",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Terkrahst</span><br /></span>Bastion of the Seas</div><ul><li>Level: Land</li><li>Balance: $344,791.00</li><li>Chunks: 310</li><li>Created at: 03/31/2025 05:50</li><li>Players (31): MunTheOdyssey, Eaglefrost_, SK42, riacritter, shep509, Faelix10, Alakazavartin, Bobbythegoof, CsabiPanda2011, GracieShelby2718, Gugged_Chef21242, IndigoBre, M1neslayer_2, MadameJuniper, Morphylus353, Mr_Stoecki, Naesten8hjemlos, NapoleonSidePart, Orangeflip, POGGEROOO,  ...</li></ul><p><strong>This land belongs to nation Liranoskova_NR:</strong></p><ul><li>Level: Nation</li><li>Capital: Liranoskova</li><li>Founded at: 02/04/2025 09:40</li><li>Lands (amount: 4, players: 208): Liranoskova, Terkrahst, Bjirnoskova, Iqel\u00e2</li></ul>\n",
+    "color": "#aa0000",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Terkrahst</span><br /></span>Bastion of the Seas</div><ul><li>Level: Land</li><li>Balance: $344,791.00</li><li>Chunks: 310</li><li>Created at: 03/31/2025 05:50</li><li>Players (31): MunTheOdyssey, Eaglefrost_, SK42, riacritter, shep509, Faelix10, Alakazavartin, Bobbythegoof, CsabiPanda2011, GracieShelby2718, Gugged_Chef21242, IndigoBre, M1neslayer_2, MadameJuniper, Morphylus353, Mr_Stoecki, Naesten8hjemlos, NapoleonSidePart, Orangeflip, POGGEROOO,  ...</li></ul><p><strong>This land belongs to nation Liranoskova_NR:</strong></p><ul><li>Level: Nation</li><li>Capital: Liranoskova</li><li>Founded at: 02/04/2025 09:40</li><li>Lands (amount: 4, players: 208): Liranoskova, Terkrahst, Bjirnoskova, Iqel\u00e2</li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": -7024,
+       "z": -3008
+      },
+      {
+       "x": -7008,
+       "z": -3008
+      },
+      {
+       "x": -7008,
+       "z": -3072
+      },
+      {
+       "x": -6880,
+       "z": -3072
+      },
+      {
+       "x": -6880,
+       "z": -3088
+      },
+      {
+       "x": -6704,
+       "z": -3088
+      },
+      {
+       "x": -6704,
+       "z": -3056
+      },
+      {
+       "x": -6624,
+       "z": -3056
+      },
+      {
+       "x": -6624,
+       "z": -2880
+      },
+      {
+       "x": -6720,
+       "z": -2880
+      },
+      {
+       "x": -6720,
+       "z": -2848
+      },
+      {
+       "x": -6816,
+       "z": -2848
+      },
+      {
+       "x": -6816,
+       "z": -2832
+      },
+      {
+       "x": -6864,
+       "z": -2832
+      },
+      {
+       "x": -6864,
+       "z": -2864
+      },
+      {
+       "x": -6880,
+       "z": -2864
+      },
+      {
+       "x": -6880,
+       "z": -2848
+      },
+      {
+       "x": -6928,
+       "z": -2848
+      },
+      {
+       "x": -6928,
+       "z": -2864
+      },
+      {
+       "x": -6976,
+       "z": -2864
+      },
+      {
+       "x": -6976,
+       "z": -2880
+      },
+      {
+       "x": -6992,
+       "z": -2880
+      },
+      {
+       "x": -6992,
+       "z": -2912
+      },
+      {
+       "x": -7008,
+       "z": -2912
+      },
+      {
+       "x": -7008,
+       "z": -2960
+      },
+      {
+       "x": -6992,
+       "z": -2960
+      },
+      {
+       "x": -6992,
+       "z": -2992
+      },
+      {
+       "x": -7024,
+       "z": -2992
+      }
+     ],
+     [
+      {
+       "x": -6912,
+       "z": -3024
+      },
+      {
+       "x": -6896,
+       "z": -3024
+      },
+      {
+       "x": -6896,
+       "z": -2960
+      },
+      {
+       "x": -6912,
+       "z": -2960
+      }
+     ],
+     [
+      {
+       "x": -6928,
+       "z": -2896
+      },
+      {
+       "x": -6912,
+       "z": -2896
+      },
+      {
+       "x": -6912,
+       "z": -2880
+      },
+      {
+       "x": -6928,
+       "z": -2880
+      }
+     ],
+     [
+      {
+       "x": -6960,
+       "z": -2944
+      },
+      {
+       "x": -6944,
+       "z": -2944
+      },
+      {
+       "x": -6944,
+       "z": -2928
+      },
+      {
+       "x": -6960,
+       "z": -2928
+      }
+     ],
+     [
+      {
+       "x": -6656,
+       "z": -2976
+      },
+      {
+       "x": -6640,
+       "z": -2976
+      },
+      {
+       "x": -6640,
+       "z": -2896
+      },
+      {
+       "x": -6656,
+       "z": -2896
+      }
+     ],
+     [
+      {
+       "x": -6688,
+       "z": -2928
+      },
+      {
+       "x": -6672,
+       "z": -2928
+      },
+      {
+       "x": -6672,
+       "z": -2912
+      },
+      {
+       "x": -6688,
+       "z": -2912
+      }
+     ]
+    ]
+   },
+   {
+    "fillColor": "#ffffff",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Morger\u00f4l</span><br /></span>Village of Fantascurdragon.</div><ul><li>Level: Village</li><li>Balance: $7,720.70</li><li>Chunks: 223</li><li>Created at: 11/03/2025 06:01</li><li>Players (7): Fantascurdragon, Genever_, King_Zelorm2, MexicanFawkes, Micgee117, NeroTheGardener, dAebAky</li></ul><p><strong>This land belongs to nation Eirwynor:</strong></p><ul><li>Level: Empire</li><li>Capital: Valasmak_Mountains</li><li>Founded at: 04/30/2024 05:07</li><li>Lands (amount: 69, players: 1132): Valasmak_Mountains, Ceros, Vaelkr\u00fbs_Castle, Valia, Hunter's-Dream, Fergusdorf, Irithid, Bisceyn, Cave, segregspent, Iritelon, Gearlixt, Lumiriya, Argentum, Oh'ohlatai, Shair-Ulziraad, Hampton, Fort_Lothiriel, Ildorbor, Rusenwalt,  ...</li></ul>\n",
+    "color": "#ffffff",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Morger\u00f4l</span><br /></span>Village of Fantascurdragon.</div><ul><li>Level: Village</li><li>Balance: $7,720.70</li><li>Chunks: 223</li><li>Created at: 11/03/2025 06:01</li><li>Players (7): Fantascurdragon, Genever_, King_Zelorm2, MexicanFawkes, Micgee117, NeroTheGardener, dAebAky</li></ul><p><strong>This land belongs to nation Eirwynor:</strong></p><ul><li>Level: Empire</li><li>Capital: Valasmak_Mountains</li><li>Founded at: 04/30/2024 05:07</li><li>Lands (amount: 69, players: 1132): Valasmak_Mountains, Ceros, Vaelkr\u00fbs_Castle, Valia, Hunter's-Dream, Fergusdorf, Irithid, Bisceyn, Cave, segregspent, Iritelon, Gearlixt, Lumiriya, Argentum, Oh'ohlatai, Shair-Ulziraad, Hampton, Fort_Lothiriel, Ildorbor, Rusenwalt,  ...</li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": 7776,
+       "z": -10016
+      },
+      {
+       "x": 7824,
+       "z": -10016
+      },
+      {
+       "x": 7824,
+       "z": -10112
+      },
+      {
+       "x": 7840,
+       "z": -10112
+      },
+      {
+       "x": 7840,
+       "z": -10016
+      },
+      {
+       "x": 7968,
+       "z": -10016
+      },
+      {
+       "x": 7968,
+       "z": -10000
+      },
+      {
+       "x": 8112,
+       "z": -10000
+      },
+      {
+       "x": 8112,
+       "z": -9984
+      },
+      {
+       "x": 8064,
+       "z": -9984
+      },
+      {
+       "x": 8064,
+       "z": -9888
+      },
+      {
+       "x": 8080,
+       "z": -9888
+      },
+      {
+       "x": 8080,
+       "z": -9872
+      },
+      {
+       "x": 8128,
+       "z": -9872
+      },
+      {
+       "x": 8128,
+       "z": -9968
+      },
+      {
+       "x": 8144,
+       "z": -9968
+      },
+      {
+       "x": 8144,
+       "z": -9808
+      },
+      {
+       "x": 8176,
+       "z": -9808
+      },
+      {
+       "x": 8176,
+       "z": -9760
+      },
+      {
+       "x": 8080,
+       "z": -9760
+      },
+      {
+       "x": 8080,
+       "z": -9744
+      },
+      {
+       "x": 8048,
+       "z": -9744
+      },
+      {
+       "x": 8048,
+       "z": -9760
+      },
+      {
+       "x": 8032,
+       "z": -9760
+      },
+      {
+       "x": 8032,
+       "z": -9776
+      },
+      {
+       "x": 8016,
+       "z": -9776
+      },
+      {
+       "x": 8016,
+       "z": -9792
+      },
+      {
+       "x": 8000,
+       "z": -9792
+      },
+      {
+       "x": 8000,
+       "z": -9808
+      },
+      {
+       "x": 7984,
+       "z": -9808
+      },
+      {
+       "x": 7984,
+       "z": -9824
+      },
+      {
+       "x": 7968,
+       "z": -9824
+      },
+      {
+       "x": 7968,
+       "z": -9840
+      },
+      {
+       "x": 7952,
+       "z": -9840
+      },
+      {
+       "x": 7952,
+       "z": -9856
+      },
+      {
+       "x": 7936,
+       "z": -9856
+      },
+      {
+       "x": 7936,
+       "z": -9872
+      },
+      {
+       "x": 7920,
+       "z": -9872
+      },
+      {
+       "x": 7920,
+       "z": -9888
+      },
+      {
+       "x": 7904,
+       "z": -9888
+      },
+      {
+       "x": 7904,
+       "z": -9904
+      },
+      {
+       "x": 7776,
+       "z": -9904
+      }
+     ],
+     [
+      {
+       "x": 8016,
+       "z": -9984
+      },
+      {
+       "x": 8048,
+       "z": -9984
+      },
+      {
+       "x": 8048,
+       "z": -9920
+      },
+      {
+       "x": 8032,
+       "z": -9920
+      },
+      {
+       "x": 8032,
+       "z": -9936
+      },
+      {
+       "x": 8016,
+       "z": -9936
+      }
+     ],
+     [
+      {
+       "x": 8096,
+       "z": -9856
+      },
+      {
+       "x": 8128,
+       "z": -9856
+      },
+      {
+       "x": 8128,
+       "z": -9824
+      },
+      {
+       "x": 8112,
+       "z": -9824
+      },
+      {
+       "x": 8112,
+       "z": -9840
+      },
+      {
+       "x": 8096,
+       "z": -9840
+      }
+     ]
+    ]
+   },
+   {
+    "fillColor": "#ffaa00",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Sheepygrad</span><br /></span>Sanctuary of the Medenian People</div><ul><li>Level: Province</li><li>Balance: $60,200.00</li><li>Chunks: 449</li><li>Created at: 04/14/2024 09:34</li><li>Players (21): Liberatus, KronosReal7538, King_of_Lion2000, 1M3ow, CommandoPea, EerikTheViking, FS_Seeker, Franomelon121, Icy27346, Irishgoober656, ItsDarkPlayer, Lindorm_, MFJStonks, Mqsxx, Stanzey, ThatToucanPam, a7qzv, artdom, averagelittleboy, forsvollr9998</li></ul><p><strong>This land belongs to nation Sentara:</strong></p><ul><li>Level: Empire</li><li>Capital: Solatriya</li><li>Founded at: 07/08/2024 09:18</li><li>Lands (amount: 7, players: 402): Solatriya, Prodbury, Sheepygrad, Lanyue, STC, Luevyski, Pavomia</li></ul>\n",
+    "color": "#ffaa00",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Sheepygrad</span><br /></span>Sanctuary of the Medenian People</div><ul><li>Level: Province</li><li>Balance: $60,200.00</li><li>Chunks: 449</li><li>Created at: 04/14/2024 09:34</li><li>Players (21): Liberatus, KronosReal7538, King_of_Lion2000, 1M3ow, CommandoPea, EerikTheViking, FS_Seeker, Franomelon121, Icy27346, Irishgoober656, ItsDarkPlayer, Lindorm_, MFJStonks, Mqsxx, Stanzey, ThatToucanPam, a7qzv, artdom, averagelittleboy, forsvollr9998</li></ul><p><strong>This land belongs to nation Sentara:</strong></p><ul><li>Level: Empire</li><li>Capital: Solatriya</li><li>Founded at: 07/08/2024 09:18</li><li>Lands (amount: 7, players: 402): Solatriya, Prodbury, Sheepygrad, Lanyue, STC, Luevyski, Pavomia</li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": 4432,
+       "z": 8512
+      },
+      {
+       "x": 4448,
+       "z": 8512
+      },
+      {
+       "x": 4448,
+       "z": 8480
+      },
+      {
+       "x": 4464,
+       "z": 8480
+      },
+      {
+       "x": 4464,
+       "z": 8416
+      },
+      {
+       "x": 4480,
+       "z": 8416
+      },
+      {
+       "x": 4480,
+       "z": 8400
+      },
+      {
+       "x": 4544,
+       "z": 8400
+      },
+      {
+       "x": 4544,
+       "z": 8384
+      },
+      {
+       "x": 4672,
+       "z": 8384
+      },
+      {
+       "x": 4672,
+       "z": 8368
+      },
+      {
+       "x": 4736,
+       "z": 8368
+      },
+      {
+       "x": 4736,
+       "z": 8352
+      },
+      {
+       "x": 4896,
+       "z": 8352
+      },
+      {
+       "x": 4896,
+       "z": 8384
+      },
+      {
+       "x": 4928,
+       "z": 8384
+      },
+      {
+       "x": 4928,
+       "z": 8400
+      },
+      {
+       "x": 4960,
+       "z": 8400
+      },
+      {
+       "x": 4960,
+       "z": 8432
+      },
+      {
+       "x": 4992,
+       "z": 8432
+      },
+      {
+       "x": 4992,
+       "z": 8512
+      },
+      {
+       "x": 5024,
+       "z": 8512
+      },
+      {
+       "x": 5024,
+       "z": 8528
+      },
+      {
+       "x": 5040,
+       "z": 8528
+      },
+      {
+       "x": 5040,
+       "z": 8560
+      },
+      {
+       "x": 4992,
+       "z": 8560
+      },
+      {
+       "x": 4992,
+       "z": 8576
+      },
+      {
+       "x": 4944,
+       "z": 8576
+      },
+      {
+       "x": 4944,
+       "z": 8560
+      },
+      {
+       "x": 4928,
+       "z": 8560
+      },
+      {
+       "x": 4928,
+       "z": 8528
+      },
+      {
+       "x": 4880,
+       "z": 8528
+      },
+      {
+       "x": 4880,
+       "z": 8560
+      },
+      {
+       "x": 4864,
+       "z": 8560
+      },
+      {
+       "x": 4864,
+       "z": 8576
+      },
+      {
+       "x": 4768,
+       "z": 8576
+      },
+      {
+       "x": 4768,
+       "z": 8592
+      },
+      {
+       "x": 4688,
+       "z": 8592
+      },
+      {
+       "x": 4688,
+       "z": 8608
+      },
+      {
+       "x": 4544,
+       "z": 8608
+      },
+      {
+       "x": 4544,
+       "z": 8592
+      },
+      {
+       "x": 4480,
+       "z": 8592
+      },
+      {
+       "x": 4480,
+       "z": 8576
+      },
+      {
+       "x": 4464,
+       "z": 8576
+      },
+      {
+       "x": 4464,
+       "z": 8560
+      },
+      {
+       "x": 4448,
+       "z": 8560
+      },
+      {
+       "x": 4448,
+       "z": 8544
+      },
+      {
+       "x": 4432,
+       "z": 8544
+      }
+     ],
+     [
+      {
+       "x": 4704,
+       "z": 8432
+      },
+      {
+       "x": 4720,
+       "z": 8432
+      },
+      {
+       "x": 4720,
+       "z": 8448
+      },
+      {
+       "x": 4704,
+       "z": 8448
+      }
+     ]
+    ]
+   },
+   {
+    "fillColor": "#ffaa00",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Sheepygrad</span><br /></span>Sanctuary of the Medenian People</div><ul><li>Level: Province</li><li>Balance: $60,200.00</li><li>Chunks: 449</li><li>Created at: 04/14/2024 09:34</li><li>Players (21): Liberatus, KronosReal7538, King_of_Lion2000, 1M3ow, CommandoPea, EerikTheViking, FS_Seeker, Franomelon121, Icy27346, Irishgoober656, ItsDarkPlayer, Lindorm_, MFJStonks, Mqsxx, Stanzey, ThatToucanPam, a7qzv, artdom, averagelittleboy, forsvollr9998</li></ul><p><strong>This land belongs to nation Sentara:</strong></p><ul><li>Level: Empire</li><li>Capital: Solatriya</li><li>Founded at: 07/08/2024 09:18</li><li>Lands (amount: 7, players: 402): Solatriya, Prodbury, Sheepygrad, Lanyue, STC, Luevyski, Pavomia</li></ul>\n",
+    "color": "#ffaa00",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Sheepygrad</span><br /></span>Sanctuary of the Medenian People</div><ul><li>Level: Province</li><li>Balance: $60,200.00</li><li>Chunks: 449</li><li>Created at: 04/14/2024 09:34</li><li>Players (21): Liberatus, KronosReal7538, King_of_Lion2000, 1M3ow, CommandoPea, EerikTheViking, FS_Seeker, Franomelon121, Icy27346, Irishgoober656, ItsDarkPlayer, Lindorm_, MFJStonks, Mqsxx, Stanzey, ThatToucanPam, a7qzv, artdom, averagelittleboy, forsvollr9998</li></ul><p><strong>This land belongs to nation Sentara:</strong></p><ul><li>Level: Empire</li><li>Capital: Solatriya</li><li>Founded at: 07/08/2024 09:18</li><li>Lands (amount: 7, players: 402): Solatriya, Prodbury, Sheepygrad, Lanyue, STC, Luevyski, Pavomia</li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": 4864,
+       "z": 8576
+      },
+      {
+       "x": 4912,
+       "z": 8576
+      },
+      {
+       "x": 4912,
+       "z": 8592
+      },
+      {
+       "x": 4928,
+       "z": 8592
+      },
+      {
+       "x": 4928,
+       "z": 8608
+      },
+      {
+       "x": 4912,
+       "z": 8608
+      },
+      {
+       "x": 4912,
+       "z": 8640
+      },
+      {
+       "x": 4864,
+       "z": 8640
+      }
+     ]
+    ]
+   },
+   {
+    "fillColor": "#ffaa00",
+    "popup": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Sihile</span><br /></span>Settlement of Rovenami.</div><ul><li>Level: Settlement</li><li>Balance: $375.00</li><li>Chunks: 30</li><li>Created at: 08/27/2026 12:28</li><li>Players (3): Rovenami, Axcelarate, kiwisDragons</li></ul><p><strong>This land belongs to nation Talasia:</strong></p><ul><li>Level: Empire</li><li>Capital: Simhara</li><li>Founded at: 10/28/2025 06:21</li><li>Lands (amount: 7, players: 71): Simhara, Deralago, Baleizela, Erlbach, Sihile, Angkor, Valgor</li></ul>\n",
+    "color": "#ffaa00",
+    "tooltip": "<div><span style=\"font-size: 200%;\"><span style=\"color: {land_color};\">Sihile</span><br /></span>Settlement of Rovenami.</div><ul><li>Level: Settlement</li><li>Balance: $375.00</li><li>Chunks: 30</li><li>Created at: 08/27/2026 12:28</li><li>Players (3): Rovenami, Axcelarate, kiwisDragons</li></ul><p><strong>This land belongs to nation Talasia:</strong></p><ul><li>Level: Empire</li><li>Capital: Simhara</li><li>Founded at: 10/28/2025 06:21</li><li>Lands (amount: 7, players: 71): Simhara, Deralago, Baleizela, Erlbach, Sihile, Angkor, Valgor</li></ul>\n",
+    "weight": 2,
+    "type": "polygon",
+    "points": [
+     [
+      {
+       "x": 1408,
+       "z": -4176
+      },
+      {
+       "x": 1424,
+       "z": -4176
+      },
+      {
+       "x": 1424,
+       "z": -4192
+      },
+      {
+       "x": 1440,
+       "z": -4192
+      },
+      {
+       "x": 1440,
+       "z": -4208
+      },
+      {
+       "x": 1472,
+       "z": -4208
+      },
+      {
+       "x": 1472,
+       "z": -4192
+      },
+      {
+       "x": 1488,
+       "z": -4192
+      },
+      {
+       "x": 1488,
+       "z": -4160
+      },
+      {
+       "x": 1504,
+       "z": -4160
+      },
+      {
+       "x": 1504,
+       "z": -4128
+      },
+      {
+       "x": 1488,
+       "z": -4128
+      },
+      {
+       "x": 1488,
+       "z": -4112
+      },
+      {
+       "x": 1472,
+       "z": -4112
+      },
+      {
+       "x": 1472,
+       "z": -4096
+      },
+      {
+       "x": 1440,
+       "z": -4096
+      },
+      {
+       "x": 1440,
+       "z": -4112
+      },
+      {
+       "x": 1408,
+       "z": -4112
+      }
+     ]
+    ]
+   }
+  ]
+ }
+]
