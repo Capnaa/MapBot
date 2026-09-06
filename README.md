@@ -22,8 +22,9 @@ Two Discord bot users run inside one process and share everything behind them:
 
 Shared, constructed once: configuration, runtime settings, the map poller and its fetch cycle, the
 claim snapshot cache, the render cache, and all stores. In particular there is **one poll per cycle
-for the whole process**, not one per bot. That is a commitment to the map operator, not a tuning
-knob.
+for the whole process**, not one per bot, and it is conditional: the feed is around seven megabytes,
+so `If-None-Match` keeps an unchanged cycle down to a 304. Both are commitments to the map operator,
+not tuning knobs.
 
 ## Planned commands
 

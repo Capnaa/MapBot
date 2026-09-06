@@ -16,12 +16,18 @@ import java.util.Objects;
  * no database connection anywhere in this project, and that is what the bot's sanctioned status
  * rests on. Treat additions here as a change to the project's premise.
  *
+ * <p><strong>Fetches conditionally.</strong> The feed is around seven megabytes and the server
+ * supports {@code If-None-Match}, answering 304 when nothing has changed. Polling unconditionally
+ * every minute would pull roughly ten gigabytes a day off someone else's map for data that is
+ * mostly identical. Callers keep the last {@code ETag} and pass it back.
+ *
  * <p><strong>Caller obligation: one fetch per poll cycle for the whole process.</strong> The
  * snapshot fans out to every guild, every command and both bot users. Polling independently from
  * two places doubles load on a third party that granted access on the understanding it would not
  * be. This class cannot see its callers, so the constraint belongs to whoever owns the poll cycle.
  *
- * <p>Immutable and thread-safe.
+ * <p>Immutable and thread-safe. The ETag lives with the caller rather than in a field here, so two
+ * callers cannot invalidate each other's view of what they last saw.
  */
 public final class MarkersClient {
 
@@ -55,29 +61,38 @@ public final class MarkersClient {
     }
 
     /**
-     * Fetches the current marker payload.
+     * Fetches the marker payload, transferring it only if it has changed.
      *
      * <p>Returns the raw body rather than a parsed model, so that replacing the map software
      * touches the parsing package and not this one. Blocking; see {@link Http#send} for the retry
      * envelope.
      *
-     * @return the response body, sniffed as JSON but not parsed
+     * @param previousEtag validator from the last {@link MarkersResponse}, or {@code null} on the
+     *                     first poll after startup, which forces a full transfer
+     * @return {@link MarkersResponse.Unchanged} on a 304, otherwise
+     *         {@link MarkersResponse.Changed} carrying the body
      * @throws MapOfflineException if the endpoint served the HTML offline page, which arrives as
      *                             HTTP 200 and cannot be detected by status code
-     * @throws IOException         on transport failure, exhausted retries, or a non-200 status
+     * @throws IOException         on transport failure, exhausted retries, or any other non-200
      */
-    public String fetch() throws IOException, MapOfflineException {
-        HttpRequest request = HttpRequest.newBuilder(endpoint)
+    public MarkersResponse fetch(String previousEtag) throws IOException, MapOfflineException {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(endpoint)
                 .GET()
                 .timeout(requestTimeout)
                 .header("User-Agent", userAgent)
-                .header("Accept", "application/json")
-                .build();
+                .header("Accept", "application/json");
+        if (previousEtag != null && !previousEtag.isBlank()) {
+            builder.header("If-None-Match", previousEtag);
+        }
 
         HttpResponse<String> response =
-                Http.send(http, request, maxAttempts, baseRetryDelay, maxRetryDelay);
+                Http.send(http, builder.build(), maxAttempts, baseRetryDelay, maxRetryDelay);
 
         int status = response.statusCode();
+        if (status == 304) {
+            // No body was sent, so the validator we asked with is still the current one.
+            return new MarkersResponse.Unchanged(previousEtag);
+        }
         if (status != 200) {
             throw new IOException("Markers endpoint " + endpoint + " returned HTTP " + status);
         }
@@ -87,7 +102,7 @@ public final class MarkersClient {
             // Caught at the edge so no downstream consumer carries the special case.
             throw new MapOfflineException("Markers endpoint " + endpoint + " served a non-JSON body");
         }
-        return body;
+        return new MarkersResponse.Changed(body, response.headers().firstValue("ETag").orElse(null));
     }
 
     /** @return the endpoint this client reads, for logging and the operator-facing host list */

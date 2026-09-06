@@ -29,10 +29,13 @@ Rules:
 
 ## Being a good citizen of the map
 
-The bot fetches the marker feed once per cycle for the whole process, regardless of how many guilds
-or how many bot users are running, and identifies itself honestly in its User-Agent rather than
-impersonating a browser. Those are commitments to the map operator, not implementation details:
-changing either one is a conversation with staff first.
+Three commitments to the map operator, not implementation details. The bot fetches the marker feed
+once per cycle for the whole process, regardless of how many guilds or bot users are running. It
+fetches conditionally, sending `If-None-Match` so an unchanged payload costs a 304 instead of about
+seven megabytes. And it identifies itself honestly in its User-Agent rather than impersonating a
+browser.
+
+Changing any of the three is a conversation with staff first.
 
 ## Reporting something
 
