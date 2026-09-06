@@ -29,7 +29,7 @@ import java.util.Objects;
  * <p>Immutable and thread-safe. The ETag lives with the caller rather than in a field here, so two
  * callers cannot invalidate each other's view of what they last saw.
  */
-public final class MarkersClient {
+public final class MarkersClient implements MarkersSource {
 
     private final URI endpoint;
     private final String userAgent;
@@ -75,6 +75,7 @@ public final class MarkersClient {
      *                             HTTP 200 and cannot be detected by status code
      * @throws IOException         on transport failure, exhausted retries, or any other non-200
      */
+    @Override
     public MarkersResponse fetch(String previousEtag) throws IOException, MapOfflineException {
         HttpRequest.Builder builder = HttpRequest.newBuilder(endpoint)
                 .GET()
