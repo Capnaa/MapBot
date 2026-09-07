@@ -92,13 +92,23 @@ class MarkdownSafetyTest {
     }
 
     @Test
-    void keepsUnderscoresInsideALinkLabel() {
+    void doesNotEscapeInsideALinkLabel() {
+        // Discord consumes a backslash escape in ordinary text but prints it literally between the
+        // brackets of a link, so escaping there shows the reader "New\_Regnum".
         Optional<MapLink> map = MapLink.from(java.net.URI.create(
                 "https://map.stoneworks.gg/abex/tiles/minecraft_overworld/markers.json"));
 
-        String rendered = ChangeReport.nameOf(claim("Ace_OfHearts__", "A", null), map);
+        String rendered = ChangeReport.nameOf(claim("New_Regnum", "A", null), map);
 
-        assertTrue(rendered.startsWith("[**Ace\\_OfHearts\\_\\_**](https://"), rendered);
+        assertTrue(rendered.startsWith("[**New_Regnum**](https://"), rendered);
+        assertFalse(rendered.contains("\\"), rendered);
+    }
+
+    @Test
+    void stillEscapesWhenThereIsNoLinkToHideIn() {
+        String rendered = ChangeReport.nameOf(claim("New_Regnum", "A", null), Optional.empty());
+
+        assertEquals("**New\\_Regnum**", rendered);
     }
 
     @Test

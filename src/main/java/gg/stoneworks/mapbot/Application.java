@@ -10,6 +10,7 @@ import gg.stoneworks.mapbot.discord.commands.AboutCommand;
 import gg.stoneworks.mapbot.discord.FollowDispatch;
 import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
 import gg.stoneworks.mapbot.discord.commands.FollowCommand;
+import gg.stoneworks.mapbot.discord.commands.PlayerCommand;
 import gg.stoneworks.mapbot.discord.commands.NationCommand;
 import gg.stoneworks.mapbot.discord.commands.TopCommand;
 import gg.stoneworks.mapbot.discord.MapLink;
@@ -78,6 +79,7 @@ public final class Application implements AutoCloseable {
     /** Rebuilt when a snapshot is accepted, so suggestions match what lookups will find. */
     private volatile NameIndex claimNames = NameIndex.empty();
     private volatile NameIndex nationNames = NameIndex.empty();
+    private volatile NameIndex playerNames = NameIndex.empty();
     private DiscordBot publicBot;
 
     /** Held so the poll cycle can pre-render the leaderboards people use. */
@@ -145,7 +147,9 @@ public final class Application implements AutoCloseable {
                         () -> nationNames))
                 .add(topCommand = new TopCommand(poller::claims, () -> baseMap,
                         poller::snapshotVersion, renders))
-                .add(new FollowCommand(follows, poller::claims, () -> claimNames, () -> nationNames));
+                .add(new FollowCommand(follows, poller::claims, () -> claimNames, () -> nationNames))
+                .add(new PlayerCommand(poller::claims, () -> baseMap,
+                        MapLink.from(config.map().markersUrl()), () -> playerNames));
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
@@ -236,6 +240,20 @@ public final class Application implements AutoCloseable {
                     chunksByNation.merge(n.name(), claim.chunkCount(), Integer::sum));
         }
         nationNames = NameIndex.of(chunksByNation.entrySet().stream()
+                .sorted(java.util.Map.Entry.<String, Integer>comparingByValue().reversed())
+                .map(java.util.Map.Entry::getKey)
+                .toList());
+
+        // Players ranked by how many claims list them, so an empty box offers the active ones.
+        // Only players the map actually publishes can appear here: it truncates long member lists,
+        // so someone real can be missing from the suggestions while /player still finds them.
+        java.util.Map<String, Integer> claimsByPlayer = new java.util.LinkedHashMap<>();
+        for (gg.stoneworks.mapbot.model.Claim claim : poller.claims()) {
+            for (String member : claim.members().listed()) {
+                claimsByPlayer.merge(member, 1, Integer::sum);
+            }
+        }
+        playerNames = NameIndex.of(claimsByPlayer.entrySet().stream()
                 .sorted(java.util.Map.Entry.<String, Integer>comparingByValue().reversed())
                 .map(java.util.Map.Entry::getKey)
                 .toList());

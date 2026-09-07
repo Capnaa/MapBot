@@ -69,10 +69,12 @@ public final class ChangeReport {
      * into a map address still produces a readable report.
      */
     public static String nameOf(Claim claim, Optional<MapLink> map) {
-        String bold = "**" + Embeds.name(claim.name()) + "**";
+        // Raw inside a link label, escaped outside one. Discord consumes a backslash escape in
+        // ordinary text but prints it literally between the brackets of a link, so escaping there
+        // produces the visible mess it was added to prevent.
         return map.flatMap(link -> link.forClaim(claim))
-                .map(url -> "[" + bold + "](" + url + ")")
-                .orElse(bold);
+                .map(url -> "[**" + claim.name() + "**](" + url + ")")
+                .orElse("**" + Embeds.name(claim.name()) + "**");
     }
 
     private static void section(StringBuilder text, String heading, List<String> lines) {
