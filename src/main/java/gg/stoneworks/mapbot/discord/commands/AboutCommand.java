@@ -38,15 +38,19 @@ public final class AboutCommand implements SlashCommand {
     }
 
     /**
-     * What the invite asks for: post messages, embed links, attach files, and read enough history
-     * to do it. No admin, and nothing that can read a conversation.
+     * The smallest set where every command works.
+     *
+     * <p>Sending, embedding and attaching cover the replies and their maps. Seeing a channel is
+     * what {@code /follow} needs to post into one later, on a schedule, without anyone asking.
+     *
+     * <p>Reading message history is deliberately absent. The prototype asked for it and never used
+     * it: the bot answers interactions and posts embeds, and never reads a message.
      */
     private static final EnumSet<Permission> INVITE_PERMISSIONS = EnumSet.of(
             Permission.VIEW_CHANNEL,
             Permission.MESSAGE_SEND,
             Permission.MESSAGE_EMBED_LINKS,
-            Permission.MESSAGE_ATTACH_FILES,
-            Permission.MESSAGE_HISTORY);
+            Permission.MESSAGE_ATTACH_FILES);
 
     @Override
     public void handle(SlashCommandInteractionEvent event) {

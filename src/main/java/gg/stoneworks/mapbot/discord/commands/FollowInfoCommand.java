@@ -54,15 +54,7 @@ public final class FollowInfoCommand implements SlashCommand {
 
                 **Managing**
                 • `/follow list` what this server follows, each with a short id.
-                • `/follow remove <id>` stop one, picked from the list.
-
-                **What arrives**
-                One message per channel per cycle, however many follows matched, with a map of \
-                everything that changed and a close up of each new or reshaped claim. Balances and \
-                membership are deliberately left out: they move constantly and a feed carrying them \
-                is one people mute.
-
-                A follow that stops finding what it watches says so once, rather than going quiet.\
+                • `/follow remove <id>` stop one, picked from the list.\
                 """;
 
         event.replyEmbeds(new EmbedBuilder()
