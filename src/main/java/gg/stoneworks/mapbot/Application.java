@@ -7,7 +7,9 @@ import gg.stoneworks.mapbot.discord.BotListener;
 import gg.stoneworks.mapbot.discord.CommandRegistry;
 import gg.stoneworks.mapbot.discord.DiscordBot;
 import gg.stoneworks.mapbot.discord.commands.AboutCommand;
+import gg.stoneworks.mapbot.discord.FollowDispatch;
 import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
+import gg.stoneworks.mapbot.discord.commands.FollowCommand;
 import gg.stoneworks.mapbot.discord.commands.NationCommand;
 import gg.stoneworks.mapbot.discord.commands.TopCommand;
 import gg.stoneworks.mapbot.discord.MapLink;
@@ -20,6 +22,7 @@ import gg.stoneworks.mapbot.index.NameIndex;
 import gg.stoneworks.mapbot.mapdata.SquaremapLayerReader;
 import gg.stoneworks.mapbot.monitor.ClaimIndex;
 import gg.stoneworks.mapbot.monitor.FollowCycle;
+import gg.stoneworks.mapbot.monitor.FollowResolver;
 import gg.stoneworks.mapbot.monitor.MapPoller;
 import gg.stoneworks.mapbot.monitor.PollOutcome;
 import gg.stoneworks.mapbot.monitor.StabilityGate;
@@ -58,6 +61,7 @@ public final class Application implements AutoCloseable {
     private final BotConfig config;
     private final MapPoller poller;
     private final MarkerCache markerCache;
+    private final FollowStore follows;
     private final FollowCycle followCycle;
     private final SettingsStore settings;
     private final BaseMapJob baseMapJob;
@@ -79,6 +83,9 @@ public final class Application implements AutoCloseable {
     /** Held so the poll cycle can pre-render the leaderboards people use. */
     private TopCommand topCommand;
 
+    /** Built once the gateway is up, since it needs a connected JDA to find a channel. */
+    private FollowDispatch dispatch;
+
     public Application(BotConfig config, Tokens tokens) {
         this.config = config;
         this.tokens = tokens;
@@ -90,7 +97,8 @@ public final class Application implements AutoCloseable {
                 new ChurnGuard(config.monitoring().maxChurn()),
                 StabilityGate.withDefaults(config.monitoring().stabilityTolerance()));
 
-        this.followCycle = FollowCycle.withDefaults(new FollowStore(config.paths().follows()));
+        this.follows = new FollowStore(config.paths().follows());
+        this.followCycle = FollowCycle.withDefaults(follows);
         this.settings = new SettingsStore(config.paths().settings(), startupDefaults(config));
 
         this.baseMapJob = new BaseMapJob(
@@ -136,10 +144,14 @@ public final class Application implements AutoCloseable {
                         MapLink.from(config.map().markersUrl()),
                         () -> nationNames))
                 .add(topCommand = new TopCommand(poller::claims, () -> baseMap,
-                        poller::snapshotVersion, renders));
+                        poller::snapshotVersion, renders))
+                .add(new FollowCommand(follows, poller::claims, () -> claimNames, () -> nationNames));
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
+        // After the gateway, because resolving a channel needs a connected client.
+        dispatch = new FollowDispatch(publicBot.jda(), follows, FollowResolver.DEFAULT_MISS_TOLERANCE,
+                () -> baseMap, poller::claims, MapLink.from(config.map().markersUrl()));
         // The first poll runs at once so a misconfiguration surfaces on startup rather than a
         // minute later, when whoever deployed it has stopped watching.
         pollSchedule.start(this::pollOnce, true);
@@ -181,6 +193,9 @@ public final class Application implements AutoCloseable {
             if (!result.batches().isEmpty() || !result.newlyBroken().isEmpty()) {
                 LOG.info("Follows: {} channel(s) to notify, {} newly broken",
                         result.batches().size(), result.newlyBroken().size());
+            }
+            if (dispatch != null) {
+                dispatch.send(result);
             }
         } catch (IOException e) {
             // Losing this cycle's follow updates is bad; stopping the poll loop is worse.

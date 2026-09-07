@@ -11,6 +11,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -92,6 +93,35 @@ public final class ClaimOverlayRenderer {
      */
     public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims, List<Badge> badges,
                                        Rectangle region, int factor) {
+        return render(base, claims, badges, false, region, factor);
+    }
+
+    /**
+     * Draws claims, optionally ringing the ones too small to find.
+     *
+     * <p>On a whole world picture a settlement is a handful of pixels, and a reader scanning for
+     * what changed will not find it. A ring drawn at a fixed size on screen gives every subject a
+     * minimum presence without inflating the shape itself, which would misrepresent how much land
+     * actually moved.
+     *
+     * @param locate whether to ring small claims in their own outline colour
+     */
+    public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims, List<Badge> badges,
+                                       boolean locate, Rectangle region, int factor) {
+        return render(base, claims, List.of(), badges, locate, region, factor);
+    }
+
+    /**
+     * Draws claims, then arbitrary shapes on top of them.
+     *
+     * <p>The shapes exist for pictures about part of a claim rather than the whole one: the ground a
+     * land gained and the ground it lost are two areas with no claim of their own, and drawing the
+     * claim in one colour would say a border moved without saying which way.
+     *
+     * @param shapes already in full map pixel coordinates, as {@link Projection#shapeOf} produces
+     */
+    public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims, List<StyledShape> shapes,
+                                       List<Badge> badges, boolean locate, Rectangle region, int factor) {
         Objects.requireNonNull(base, "base");
         if (factor < 1) {
             throw new IllegalArgumentException("factor must be at least 1: " + factor);
@@ -120,17 +150,20 @@ public final class ClaimOverlayRenderer {
             graphics.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
             for (StyledClaim styled : claims) {
-                Path2D shape = projection.shapeOf(styled.claim());
-                graphics.setColor(styled.style().fill());
-                graphics.fill(shape);
-                graphics.setColor(styled.style().outline());
-                graphics.setStroke(new BasicStroke(styled.style().stroke() / factor));
-                graphics.draw(shape);
+                paint(graphics, projection.shapeOf(styled.claim()), styled.style(), factor);
+            }
+            for (StyledShape styled : shapes) {
+                paint(graphics, styled.shape(), styled.style(), factor);
             }
 
-            // Undo the scale so a badge is sized in finished pixels. A label exists to be read at
-            // the size Discord shows the image, and has no reason to grow with the detail factor.
+            // Undo the scale so markers are sized in finished pixels. A label or a locator exists to
+            // be seen at the size Discord shows the image, not to grow with the detail factor.
             graphics.scale(1.0 / factor, 1.0 / factor);
+            if (locate) {
+                for (StyledClaim styled : claims) {
+                    ring(graphics, projection, styled, x, y, factor);
+                }
+            }
             for (Badge badge : badges) {
                 drawBadge(graphics, projection, badge, x, y, factor, width * factor, height * factor);
             }
@@ -160,6 +193,57 @@ public final class ClaimOverlayRenderer {
 
     /** Past this the terrain is visibly enlarged pixels and the bytes buy nothing. */
     private static final int MAX_DETAIL = 4;
+
+    private static void paint(Graphics2D graphics, Shape shape, ClaimStyle style, int factor) {
+        graphics.setColor(style.fill());
+        graphics.fill(shape);
+        graphics.setColor(style.outline());
+        graphics.setStroke(new BasicStroke(style.stroke() / factor));
+        graphics.draw(shape);
+    }
+
+    /**
+     * A shape that is not a whole claim, and how to draw it.
+     *
+     * @param shape in full map pixel coordinates
+     */
+    public record StyledShape(Shape shape, ClaimStyle style) {
+
+        public StyledShape {
+            Objects.requireNonNull(shape, "shape");
+            Objects.requireNonNull(style, "style");
+        }
+    }
+
+    /**
+     * Rings a claim that would otherwise be lost on the picture.
+     *
+     * <p>Only the small ones. A ring around a claim already hundreds of pixels across adds nothing
+     * and sits inside its own outline looking like a mistake.
+     */
+    private static void ring(Graphics2D graphics, Projection projection, StyledClaim styled,
+                             int originX, int originY, int factor) {
+        Rectangle bounds = projection.shapeOf(styled.claim()).getBounds();
+        if (Math.max(bounds.width, bounds.height) * factor > LOCATOR_MAX_CLAIM) {
+            return;
+        }
+        Point anchor = ClaimGeometry.anchor(styled.claim()).orElse(null);
+        if (anchor == null) {
+            return;
+        }
+        int centreX = (int) Math.round((projection.x(anchor.x()) - originX) * factor);
+        int centreY = (int) Math.round((projection.y(anchor.z()) - originY) * factor);
+
+        graphics.setColor(styled.style().outline());
+        graphics.setStroke(new BasicStroke(LOCATOR_STROKE));
+        graphics.drawOval(centreX - LOCATOR_RADIUS, centreY - LOCATOR_RADIUS,
+                LOCATOR_RADIUS * 2, LOCATOR_RADIUS * 2);
+    }
+
+    /** Past this many finished pixels a claim can be seen on its own. */
+    private static final int LOCATOR_MAX_CLAIM = 26;
+    private static final int LOCATOR_RADIUS = 15;
+    private static final float LOCATOR_STROKE = 2.5f;
 
     /**
      * Draws one badge centred on its claim.
