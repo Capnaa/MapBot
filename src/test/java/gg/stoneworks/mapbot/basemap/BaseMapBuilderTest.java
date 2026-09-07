@@ -289,4 +289,43 @@ class BaseMapBuilderTest {
         assertSame(result, result.desaturated(0));
         assertSame(result, result.darkened(1));
     }
+
+    @Test
+    void tintLeansEveryPixelTowardOneColour() throws IOException {
+        BaseMapBuilder.Result grey = builder(everyTile(16, new Color(128, 128, 128)))
+                .build(new Bbox(0, 0, 15, 15), new TileGrid(16, 0, 0));
+
+        int tinted = grey.tinted(new Color(110, 145, 210), 0.4).image().getRGB(8, 8);
+
+        assertTrue((tinted & 255) > ((tinted >> 16) & 255), "leaning blue means blue exceeds red");
+    }
+
+    @Test
+    void tintDoesNotVaryWithTerrainColour() throws IOException {
+        // The property the whole approach rests on: two different terrains at the same brightness
+        // end up identical, so no hue survives to compete with a claim colour.
+        BaseMapBuilder.Result forest = builder(everyTile(16, new Color(90, 90, 90)))
+                .build(new Bbox(0, 0, 15, 15), new TileGrid(16, 0, 0));
+        BaseMapBuilder.Result ocean = builder(everyTile(16, new Color(90, 90, 90)))
+                .build(new Bbox(0, 0, 15, 15), new TileGrid(16, 0, 0));
+
+        Color tint = new Color(110, 145, 210);
+        assertEquals(forest.tinted(tint, 0.4).image().getRGB(8, 8),
+                ocean.tinted(tint, 0.4).image().getRGB(8, 8));
+    }
+
+    @Test
+    void tintLeavesUnrenderedGroundBlack() throws IOException {
+        // Weighted by brightness, so black stays black rather than washing to the tint colour.
+        TileSource patchy = (zoom, x, y) -> x == 0 && y == 0
+                ? Optional.of(tile(16, Color.WHITE))
+                : Optional.empty();
+
+        BaseMapBuilder.Result styled = builder(patchy)
+                .build(new Bbox(0, 0, 31, 31), new TileGrid(16, 0, 0))
+                .withBackground(Color.BLACK)
+                .tinted(new Color(110, 145, 210), 0.4);
+
+        assertEquals(0xFF000000, styled.image().getRGB(20, 20));
+    }
 }

@@ -149,4 +149,17 @@ class ConfigLoaderTest {
         assertEquals("https://map.stoneworks.gg/abex/tiles/world/",
                 ConfigLoader.from(fixable).map().tileBaseUrl());
     }
+
+    @Test
+    void refusesAColourThatIsNotHex() throws Exception {
+        Properties broken = example();
+        broken.setProperty("basemap.tint.colour", "cornflower");
+
+        assertThrows(ConfigException.class, () -> ConfigLoader.from(broken));
+    }
+
+    @Test
+    void readsTheTintColour() throws Exception {
+        assertEquals(new java.awt.Color(0x6e91d2), ConfigLoader.from(example()).baseMap().tint());
+    }
 }

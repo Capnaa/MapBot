@@ -97,9 +97,13 @@ public record BotConfig(Discord discord,
      * @param targetPixels size of the finished map's longer edge
      * @param desaturation how far to drain colour from the terrain
      * @param brightness   how far to dim it, so claim colours own the top of the range
+     * @param tint         colour the whole image leans toward once its own colour is gone
+     * @param tintStrength how far it leans. Uniform by brightness rather than by terrain, so it
+     *                     adds no hue that could be mistaken for a claim.
      */
     public record BaseMap(LocalTime rebuildAt, ZoneId zone, int targetPixels,
-                          double desaturation, double brightness) {
+                          double desaturation, double brightness,
+                          java.awt.Color tint, double tintStrength) {
     }
 
     /**

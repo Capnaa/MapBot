@@ -218,6 +218,49 @@ public final class BaseMapBuilder {
             return new Result(dimmed, calibration, tilesFetched, tilesMissing);
         }
 
+        /**
+         * Nudges the whole image toward one colour.
+         *
+         * <p>Applied after desaturation, so the map is a map rather than a photocopy without any
+         * hue varying by terrain. That distinction is the point: the tint scales with each pixel's
+         * brightness, not its colour, so a forest and an ocean at the same brightness end up
+         * identical. Claim colours therefore keep the entire spectrum to themselves, and the rule a
+         * reader learns in one glance holds: anything coloured is a claim.
+         *
+         * <p>Scaling by brightness also leaves black alone, so the unrendered gaps stay black
+         * rather than becoming a wash of the tint colour.
+         *
+         * @param toward the colour to lean toward
+         * @param amount 0 changes nothing, 1 replaces the brightest pixels entirely
+         */
+        public Result tinted(Color toward, double amount) {
+            if (amount < 0 || amount > 1) {
+                throw new IllegalArgumentException("amount must be between 0 and 1: " + amount);
+            }
+            if (amount == 0) {
+                return this;
+            }
+
+            BufferedImage tinted = new BufferedImage(image.getWidth(), image.getHeight(), image.getType());
+            for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    int argb = image.getRGB(x, y);
+                    int alpha = argb >>> 24;
+                    int red = lean((argb >> 16) & 0xFF, toward.getRed(), amount);
+                    int green = lean((argb >> 8) & 0xFF, toward.getGreen(), amount);
+                    int blue = lean(argb & 0xFF, toward.getBlue(), amount);
+                    tinted.setRGB(x, y, (alpha << 24) | (red << 16) | (green << 8) | blue);
+                }
+            }
+            return new Result(tinted, calibration, tilesFetched, tilesMissing);
+        }
+
+        /** Weighted by how bright the pixel already is, so dark ground keeps its darkness. */
+        private static int lean(int channel, int toward, double amount) {
+            double weighted = channel + (toward - channel) * amount * (channel / 255.0);
+            return Math.max(0, Math.min(255, (int) Math.round(weighted)));
+        }
+
         /** Rec. 709 luminance, which weights green far above blue the way an eye does. */
         private static int mute(int argb, double amount) {
             int alpha = argb >>> 24;

@@ -47,6 +47,11 @@ basemap.target.pixels=2048
 # Terrain is muted so claim colours stand out against it. 1.0 is fully grey.
 basemap.desaturation=1.0
 basemap.brightness=0.75
+# Once the terrain's own colour is gone, the whole image leans toward this one. Applied by
+# brightness rather than by terrain, so no hue varies with what is on the ground and nothing
+# competes with claim colours. Claims use the full spectrum; the backdrop gets one note.
+basemap.tint.colour=#6e91d2
+basemap.tint.strength=0.40
 
 ### Feature toggles (startup defaults; changeable at runtime by an admin) ###
 features.follows.enabled=true

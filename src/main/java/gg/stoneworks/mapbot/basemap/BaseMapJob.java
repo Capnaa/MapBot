@@ -46,7 +46,8 @@ public final class BaseMapJob {
      *
      * <p>The order is fixed and not interchangeable. Cropping must precede scaling, or the origin
      * stops being a whole number of blocks. Styling must follow both, since flattening away the
-     * transparency first would blend the background colour into the edges during the resize.
+     * transparency first would blend the background colour into the edges during the resize. Within
+     * styling, the tint comes last, after the colour it is replacing has already been removed.
      *
      * @param border the world border, from the map's own worldborder layer
      * @return where the finished map ended up
@@ -63,7 +64,8 @@ public final class BaseMapJob {
                 .scaledTo(settings.targetPixels())
                 .withBackground(settings.background())
                 .desaturated(settings.desaturation())
-                .darkened(settings.brightness());
+                .darkened(settings.brightness())
+                .tinted(settings.tint(), settings.tintStrength());
 
         ByteArrayOutputStream png = new ByteArrayOutputStream();
         ImageIO.write(finished.image(), "png", png);
@@ -80,10 +82,13 @@ public final class BaseMapJob {
      * @param targetPixels      size of the finished map's longer edge
      * @param desaturation      how far to mute the terrain so overlays stand out
      * @param brightness        how far to dim it, giving claim colours the top of the range
+     * @param tint              colour the whole image leans toward, uniformly
+     * @param tintStrength       how far it leans
      * @param background        what unrendered ground becomes
      * @param pauseBetweenTiles spacing between requests, which is what keeps a rebuild courteous
      */
     public record Settings(int zoomMax, int targetPixels, double desaturation, double brightness,
+                           Color tint, double tintStrength,
                            Color background, Duration pauseBetweenTiles) {
 
         public Settings {
@@ -100,7 +105,8 @@ public final class BaseMapJob {
          * images to read.
          */
         public static Settings standard(int zoomMax) {
-            return new Settings(zoomMax, 2048, 1.0, 0.75, Color.BLACK, Duration.ofSeconds(1));
+            return new Settings(zoomMax, 2048, 1.0, 0.75,
+                    new Color(110, 145, 210), 0.40, Color.BLACK, Duration.ofSeconds(1));
         }
     }
 

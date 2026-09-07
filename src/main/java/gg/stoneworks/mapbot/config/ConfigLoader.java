@@ -77,7 +77,9 @@ public final class ConfigLoader {
                         zone("basemap.rebuild.zone"),
                         integer("basemap.target.pixels", 256, 8192),
                         fraction("basemap.desaturation"),
-                        fraction("basemap.brightness")),
+                        fraction("basemap.brightness"),
+                        colour("basemap.tint.colour"),
+                        fraction("basemap.tint.strength")),
                 new BotConfig.Features(
                         flag("features.follows.enabled"),
                         flag("features.markets.enabled"),
@@ -166,6 +168,16 @@ public final class ConfigLoader {
             return value;
         }
         return value.endsWith("/") ? value : value + "/";
+    }
+
+    /** An {@code #rrggbb} colour, the same notation the map itself uses for claims. */
+    private java.awt.Color colour(String key) {
+        String value = properties.getProperty(key, "").trim();
+        if (!value.matches("#[0-9a-fA-F]{6}")) {
+            problems.add(key + " must be a colour like #6e91d2, got: " + value);
+            return java.awt.Color.WHITE;
+        }
+        return new java.awt.Color(Integer.parseInt(value.substring(1), 16));
     }
 
     private Path path(String key, String fallback) {

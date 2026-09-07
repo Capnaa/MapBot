@@ -35,6 +35,39 @@ public record Calibration(int offsetX, int offsetZ, double scale, int width, int
     }
 
     /**
+     * Reads back what {@link #asProperties()} wrote.
+     *
+     * @throws IllegalArgumentException if a key is missing or unparseable, since a half-read
+     *                                  calibration would place every overlay slightly wrong rather
+     *                                  than failing visibly
+     */
+    public static Calibration fromProperties(java.util.Properties properties) {
+        return new Calibration(
+                integer(properties, "basemap.offset.x"),
+                integer(properties, "basemap.offset.z"),
+                decimal(properties, "basemap.scale"),
+                integer(properties, "basemap.width"),
+                integer(properties, "basemap.height"),
+                integer(properties, "basemap.zoom"));
+    }
+
+    private static int integer(java.util.Properties properties, String key) {
+        return Integer.parseInt(require(properties, key));
+    }
+
+    private static double decimal(java.util.Properties properties, String key) {
+        return Double.parseDouble(require(properties, key));
+    }
+
+    private static String require(java.util.Properties properties, String key) {
+        String value = properties.getProperty(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Calibration is missing " + key);
+        }
+        return value.trim();
+    }
+
+    /**
      * The same values as a properties fragment, so a rebuild can hand them straight to
      * configuration rather than a person copying six digits out of a log.
      */

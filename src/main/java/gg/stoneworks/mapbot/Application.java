@@ -71,6 +71,7 @@ public final class Application implements AutoCloseable {
                 config.paths().baseMapCalibration(),
                 new BaseMapJob.Settings(config.map().zoomMax(), config.baseMap().targetPixels(),
                         config.baseMap().desaturation(), config.baseMap().brightness(),
+                        config.baseMap().tint(), config.baseMap().tintStrength(),
                         Color.BLACK, Duration.ofSeconds(1)));
 
         this.pollSchedule = new IntervalSchedule("map-poll", config.monitoring().pollInterval());
