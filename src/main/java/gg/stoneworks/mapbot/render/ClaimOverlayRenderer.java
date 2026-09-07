@@ -50,7 +50,34 @@ public final class ClaimOverlayRenderer {
      * @param region the part of the map to produce, clamped to the map itself
      */
     public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims, Rectangle region) {
+        return render(base, claims, region, 1);
+    }
+
+    /**
+     * Draws part of the map with the claims at higher resolution than the terrain.
+     *
+     * <p>The base map is a photograph and its detail is fixed: at roughly ten blocks per pixel a
+     * chunk is one and a half pixels, so a chunk-aligned edge lands on a fraction of a pixel and
+     * antialiases into mush. Claims are not a photograph. They are polygons in world coordinates,
+     * exact at any scale, and nothing is gained by drawing them at the terrain's resolution.
+     *
+     * <p>So the canvas is enlarged and the two are drawn differently. Terrain is scaled with nearest
+     * neighbour, which keeps it as honest square pixels rather than inventing detail that was never
+     * rendered. Claims are then drawn as vectors into the larger canvas, where a chunk boundary is
+     * several pixels and the stepped outline reads as steps.
+     *
+     * <p>Stroke widths are divided by the factor so an outline keeps the weight it was chosen for,
+     * gaining precision rather than thickness.
+     *
+     * @param factor how much to enlarge. Past three or four the terrain is visibly enlarged pixels
+     *               and the bytes buy nothing.
+     */
+    public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims,
+                                       Rectangle region, int factor) {
         Objects.requireNonNull(base, "base");
+        if (factor < 1) {
+            throw new IllegalArgumentException("factor must be at least 1: " + factor);
+        }
         Projection projection = new Projection(base.calibration());
 
         int x = Math.max(0, Math.min(region.x, base.width() - 1));
@@ -58,11 +85,18 @@ public final class ClaimOverlayRenderer {
         int width = Math.min(region.width, base.width() - x);
         int height = Math.min(region.height, base.height() - y);
 
-        BufferedImage canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        BufferedImage canvas = new BufferedImage(width * factor, height * factor, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = canvas.createGraphics();
         try {
-            graphics.drawImage(base.image(), 0, 0, width, height, x, y, x + width, y + height, null);
-            // Everything after this is in full-map coordinates.
+            // Nearest neighbour: the terrain has the detail it has, and smoothing it would blur
+            // real pixels into a suggestion of detail that was never in the tiles.
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            graphics.drawImage(base.image(), 0, 0, width * factor, height * factor,
+                    x, y, x + width, y + height, null);
+
+            // From here on, coordinates are full-map pixels and the transform does the rest.
+            graphics.scale(factor, factor);
             graphics.translate(-x, -y);
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             graphics.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
@@ -72,7 +106,7 @@ public final class ClaimOverlayRenderer {
                 graphics.setColor(styled.style().fill());
                 graphics.fill(shape);
                 graphics.setColor(styled.style().outline());
-                graphics.setStroke(new BasicStroke(styled.style().stroke()));
+                graphics.setStroke(new BasicStroke(styled.style().stroke() / factor));
                 graphics.draw(shape);
             }
         } finally {

@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Drawing claims on the map, and cutting a readable piece out of the result. */
@@ -137,5 +138,46 @@ class RenderingTest {
 
         assertEquals(0.0, cropped.x(cropped.source().x), 1e-9);
         assertEquals(10.0, cropped.y(cropped.source().y + 10), 1e-9);
+    }
+
+    @Test
+    void enlargingProducesAProportionallyLargerImage() {
+        BufferedImage detailed = ClaimOverlayRenderer.render(base(), List.of(),
+                new Rectangle(100, 100, 50, 50), 4);
+
+        assertEquals(200, detailed.getWidth());
+        assertEquals(200, detailed.getHeight());
+    }
+
+    @Test
+    void aClaimLandsInTheSamePlaceWhicheverResolutionItIsDrawnAt() {
+        // The transform has to place world coordinates correctly at any factor, or the outline
+        // drifts off the terrain it describes.
+        Claim red = claim("Red", 100, 100, 100, new Rgb(255, 0, 0));
+        Rectangle region = new Rectangle(80, 80, 140, 140);
+
+        BufferedImage plain = ClaimOverlayRenderer.render(base(), List.of(StyledClaim.own(red)), region, 1);
+        BufferedImage detailed = ClaimOverlayRenderer.render(base(), List.of(StyledClaim.own(red)), region, 4);
+
+        // The claim's centre sits at the same fraction across both images.
+        Color inPlain = new Color(plain.getRGB(70, 70));
+        Color inDetailed = new Color(detailed.getRGB(280, 280));
+        assertEquals(inPlain.getRed() > inPlain.getBlue(), inDetailed.getRed() > inDetailed.getBlue());
+    }
+
+    @Test
+    void terrainIsEnlargedWithoutBeingInvented() {
+        // Nearest neighbour: one source pixel becomes a block of identical pixels rather than a
+        // gradient suggesting detail the tiles never had.
+        BufferedImage detailed = ClaimOverlayRenderer.render(base(), List.of(),
+                new Rectangle(0, 0, 10, 10), 4);
+
+        assertEquals(detailed.getRGB(0, 0), detailed.getRGB(3, 3), "same source pixel, same colour");
+    }
+
+    @Test
+    void refusesAFactorBelowOne() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ClaimOverlayRenderer.render(base(), List.of(), new Rectangle(0, 0, 10, 10), 0));
     }
 }

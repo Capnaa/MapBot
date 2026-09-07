@@ -43,6 +43,15 @@ public final class ClaimCommand implements SlashCommand {
     private final Optional<MapLink> mapLink;
     private final Supplier<NameIndex> names;
 
+    /**
+     * How much larger than the terrain the claim outlines are drawn.
+     *
+     * <p>The base map runs at about ten blocks per pixel, so a chunk is one and a half pixels and a
+     * claim's stepped edge disappears into antialiasing. Four gives a chunk six pixels, which is
+     * enough to see the shape of what someone actually claimed.
+     */
+    private static final int DETAIL = 4;
+
     public ClaimCommand(Supplier<List<Claim>> claims, Supplier<Optional<BaseMapImage>> baseMap,
                         Optional<MapLink> mapLink, Supplier<NameIndex> names) {
         this.claims = claims;
@@ -198,7 +207,7 @@ public final class ClaimCommand implements SlashCommand {
         // afterwards would allocate the full 2048 square on every lookup to keep a corner of it.
         Projection projection = new Projection(base.calibration());
         Rectangle region = Cropper.regionFor(base.width(), base.height(), projection.pixelBounds(bounds));
-        BufferedImage picture = ClaimOverlayRenderer.render(base, layers, region);
+        BufferedImage picture = ClaimOverlayRenderer.render(base, layers, region, DETAIL);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(picture, "png", out);
