@@ -20,7 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -66,6 +68,65 @@ public final class FollowDispatch {
         this.baseMap = Objects.requireNonNull(baseMap, "baseMap");
         this.snapshot = Objects.requireNonNull(snapshot, "snapshot");
         this.map = Objects.requireNonNull(map, "map");
+    }
+
+    /**
+     * Tells every followed channel that the feed has stopped, or started again.
+     *
+     * <p>One message per channel however many follows it holds, because the interruption is the
+     * news and repeating it per follow is not. Sent through the same channel resolution as a change
+     * report, so a channel that has gone is dropped here too rather than failing every cycle.
+     *
+     * @param available whether posts are coming
+     * @param reason    why they are not, ignored when they are
+     */
+    public void announceAvailability(boolean available, String reason) {
+        Map<String, List<String>> byChannel = new LinkedHashMap<>();
+        for (Follow follow : store.all()) {
+            byChannel.computeIfAbsent(follow.guildId() + ":" + follow.channelId(),
+                    key -> new ArrayList<>()).add(follow.id());
+        }
+
+        for (Map.Entry<String, List<String>> entry : byChannel.entrySet()) {
+            String[] ids = entry.getKey().split(":", 2);
+            try {
+                TextChannel channel = channelFor(ids[0], ids[1], entry.getValue());
+                if (channel != null) {
+                    send(channel, List.of(availabilityEmbed(available, reason, entry.getValue().size())),
+                            List.of(), ids[0], entry.getValue());
+                }
+            } catch (RuntimeException e) {
+                LOG.warn("Could not announce follow availability to {}", entry.getKey(), e);
+            }
+        }
+        LOG.info("Announced follows {} to {} channel(s)", available ? "resumed" : "paused", byChannel.size());
+    }
+
+    /**
+     * What a channel is told.
+     *
+     * <p>Three things it has to get across, because the reader's question is not "a setting
+     * changed" but "why did my feed stop and did I miss anything": that this is bot-wide rather
+     * than something they did, that their follows are untouched, and that the gap is lost rather
+     * than queued. The last one matters most, since the natural assumption is that it catches up.
+     */
+    private static MessageEmbed availabilityEmbed(boolean available, String reason, int follows) {
+        if (available) {
+            return new EmbedBuilder()
+                    .setTitle("▶️ Follow updates resumed")
+                    .setColor(Embeds.GOOD)
+                    .setDescription("Map changes will be posted here again. Anything that happened "
+                            + "while updates were paused was not recorded, so this picks up from now.")
+                    .build();
+        }
+        return new EmbedBuilder()
+                .setTitle("⏸️ Follow updates paused")
+                .setColor(Embeds.WARN)
+                .setDescription(reason + " Nothing here has been removed: this channel still has "
+                        + Embeds.count(follows) + (follows == 1 ? " follow" : " follows")
+                        + ", and they will start posting again by themselves."
+                        + "\n\nChanges that happen while updates are paused are not posted later.")
+                .build();
     }
 
     /** Sends everything one cycle produced. Never throws: a poll must survive a bad channel. */

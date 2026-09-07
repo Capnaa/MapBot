@@ -22,6 +22,7 @@ import gg.stoneworks.mapbot.discord.commands.NationCommand;
 import gg.stoneworks.mapbot.discord.commands.TopCommand;
 import gg.stoneworks.mapbot.discord.MapLink;
 import gg.stoneworks.mapbot.discord.MapStatus;
+import gg.stoneworks.mapbot.discord.Presence;
 import gg.stoneworks.mapbot.render.BaseMapImage;
 import gg.stoneworks.mapbot.render.RenderCache;
 import gg.stoneworks.mapbot.diff.ChangeSet;
@@ -43,6 +44,7 @@ import gg.stoneworks.mapbot.net.TileClient;
 import gg.stoneworks.mapbot.ops.DailySchedule;
 import gg.stoneworks.mapbot.ops.Feature;
 import gg.stoneworks.mapbot.ops.IntervalSchedule;
+import gg.stoneworks.mapbot.ops.AvailabilityAnnouncer;
 import gg.stoneworks.mapbot.ops.Settings;
 import gg.stoneworks.mapbot.ops.SettingsStore;
 import gg.stoneworks.mapbot.store.FollowStore;
@@ -112,6 +114,9 @@ public final class Application implements AutoCloseable {
     private ConsoleMirror consoleMirror;
 
     private final Instant startedAt = Instant.now();
+
+    /** Debounces the two switches that silence a follow feed into one announcement. */
+    private AvailabilityAnnouncer announcer;
 
     public Application(BotConfig config, Tokens tokens) {
         this.config = config;
@@ -198,6 +203,8 @@ public final class Application implements AutoCloseable {
                 BotListener.publicBot("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
         startAdminBot();
+        refreshStatus();
+        announcer = AvailabilityAnnouncer.withDefaults(this::followPostingOn, this::announceFollows);
         // After the gateway, because resolving a channel needs a connected client.
         dispatch = new FollowDispatch(publicBot.jda(), follows, FollowResolver.DEFAULT_MISS_TOLERANCE,
                 () -> baseMap, poller::claims, MapLink.from(config.map().markersUrl()));
@@ -220,7 +227,7 @@ public final class Application implements AutoCloseable {
         try {
             CommandRegistry admin = new CommandRegistry(settings)
                     .add(new AdminPanelCommand(settings, this::mapStatus, follows,
-                            this::pollOnce, this::rebuildBaseMap, startedAt));
+                            this::pollOnce, this::rebuildBaseMap, startedAt, this::settingsChanged));
             adminBot = DiscordBot.connect("admin", tokens.adminBot(), admin,
                     BotListener.adminBot("admin", admin, settings));
             adminBot.publishCommands(Optional.of(config.discord().guildId()));
@@ -235,6 +242,58 @@ public final class Application implements AutoCloseable {
             LOG.error("Interrupted while connecting the admin bot");
         } catch (RuntimeException e) {
             LOG.error("The admin bot could not start; the public bot is unaffected", e);
+        }
+    }
+
+    /**
+     * Whether a follow feed is actually going to post.
+     *
+     * <p>Both switches silence it, and a reader cannot tell which one did, so they are one state.
+     */
+    private boolean followPostingOn() {
+        return settings.isEnabled(Feature.FOLLOWS) && !settings.maintenance();
+    }
+
+    private void announceFollows(boolean available) {
+        if (dispatch == null) {
+            return;
+        }
+        String reason = settings.maintenance()
+                ? "The bot is down for maintenance."
+                : "Staff have switched follow updates off across the bot.";
+        dispatch.announceAvailability(available, reason);
+    }
+
+    /**
+     * Puts the current state under each bot's name.
+     *
+     * <p>Cheap, and called from three places: startup, every poll cycle so the figures keep up, and
+     * straight after an admin toggle so a bot taken out of service says so at once rather than
+     * within a minute.
+     */
+    /** After any admin toggle: the status lines and the followed channels both care. */
+    private void settingsChanged() {
+        refreshStatus();
+        if (announcer != null) {
+            announcer.changed();
+        }
+    }
+
+    private void refreshStatus() {
+        try {
+            if (publicBot != null) {
+                long guilds = publicBot.jda().getGuildCache().size();
+                long members = publicBot.jda().getGuildCache().stream()
+                        .mapToLong(guild -> Math.max(guild.getMemberCount(), 0))
+                        .sum();
+                publicBot.setStatus(Presence.forPublic(settings.maintenance(), guilds, members));
+            }
+            if (adminBot != null) {
+                adminBot.setStatus(Presence.forAdmin(settings.maintenance(), mapStatus()));
+            }
+        } catch (RuntimeException e) {
+            // A status line is not worth a failed poll or a dead button.
+            LOG.warn("Could not update the status line: {}", e.toString());
         }
     }
 
@@ -268,6 +327,7 @@ public final class Application implements AutoCloseable {
             case PollOutcome.Offline ignored -> LOG.info("Map offline, serving cached data");
             case PollOutcome.Failed failed -> LOG.warn("Poll failed: {}", failed.reason());
         }
+        refreshStatus();
     }
 
     private void onAccepted(PollOutcome.Accepted accepted) {
@@ -407,6 +467,9 @@ public final class Application implements AutoCloseable {
     public void close() {
         pollSchedule.close();
         baseMapSchedule.close();
+        if (announcer != null) {
+            announcer.close();
+        }
         if (consoleMirror != null) {
             // Before the bot it posts through, and before the loggers below it go quiet.
             consoleMirror.announce("Map Bot shutting down.");

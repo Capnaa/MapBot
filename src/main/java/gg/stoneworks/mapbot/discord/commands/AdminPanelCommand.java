@@ -71,14 +71,19 @@ public final class AdminPanelCommand implements SlashCommand {
     private final Runnable rebuildBaseMap;
     private final Instant startedAt;
 
+    /** Run after a toggle, so the status lines stop advertising a state that has changed. */
+    private final Runnable onSettingsChanged;
+
     public AdminPanelCommand(SettingsStore settings, Supplier<MapStatus> status, FollowStore follows,
-                             Runnable pollNow, Runnable rebuildBaseMap, Instant startedAt) {
+                             Runnable pollNow, Runnable rebuildBaseMap, Instant startedAt,
+                             Runnable onSettingsChanged) {
         this.settings = settings;
         this.status = status;
         this.follows = follows;
         this.pollNow = pollNow;
         this.rebuildBaseMap = rebuildBaseMap;
         this.startedAt = startedAt;
+        this.onSettingsChanged = onSettingsChanged;
     }
 
     @Override
@@ -136,6 +141,7 @@ public final class AdminPanelCommand implements SlashCommand {
         settings.setMaintenance(turningOn);
         // Named, because "who took the bot down" is the first question afterwards.
         audit(event.getUser(), turningOn ? "turned maintenance ON" : "turned maintenance off");
+        onSettingsChanged.run();
         redraw(event);
     }
 
@@ -151,6 +157,7 @@ public final class AdminPanelCommand implements SlashCommand {
         boolean turningOn = !settings.isEnabled(feature);
         settings.setEnabled(feature, turningOn);
         audit(event.getUser(), (turningOn ? "enabled " : "disabled ") + feature);
+        onSettingsChanged.run();
         redraw(event);
     }
 

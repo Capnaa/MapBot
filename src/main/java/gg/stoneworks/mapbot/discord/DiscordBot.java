@@ -58,7 +58,6 @@ public final class DiscordBot implements AutoCloseable {
         JDA jda = JDABuilder.createLight(token, Collections.emptyList())
                 .setMemberCachePolicy(MemberCachePolicy.NONE)
                 .disableCache(EnumSet.allOf(CacheFlag.class))
-                .setActivity(Activity.watching("the map"))
                 .addEventListeners(listener)
                 .build()
                 .awaitReady();
@@ -94,6 +93,16 @@ public final class DiscordBot implements AutoCloseable {
         guild.updateCommands().addCommands(definitions).queue(
                 ok -> LOG.info("{}: published {} commands to {}", name, definitions.size(), guild.getName()),
                 error -> LOG.error("{}: failed to publish commands to {}", name, guild.getName(), error));
+    }
+
+    /**
+     * Sets the line under the bot's name.
+     *
+     * <p>A custom status rather than a "Watching …" activity, so the whole line reads as one
+     * sentence instead of being prefixed by a verb Discord chose.
+     */
+    public void setStatus(String text) {
+        jda.getPresence().setActivity(Activity.customStatus(text));
     }
 
     public JDA jda() {
