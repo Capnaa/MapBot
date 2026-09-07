@@ -55,7 +55,6 @@ public final class ConfigLoader {
                 new BotConfig.Discord(
                         required("discord.guild.id"),
                         optional("discord.channel.console"),
-                        presenceOwner(),
                         optional("discord.dev.guild.id"),
                         optional("discord.channel.feedback")),
                 new BotConfig.MapSource(
@@ -104,16 +103,6 @@ public final class ConfigLoader {
             problems.add("api.bans.url must be an http or https panel root: " + value.get());
         }
         return value;
-    }
-
-    private BotConfig.PresenceOwner presenceOwner() {
-        String value = properties.getProperty("discord.presence.owner", "public").trim();
-        try {
-            return BotConfig.PresenceOwner.valueOf(value.toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            problems.add("discord.presence.owner must be public or admin, got: " + value);
-            return BotConfig.PresenceOwner.PUBLIC;
-        }
     }
 
     private String required(String key) {

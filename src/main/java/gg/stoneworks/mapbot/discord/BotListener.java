@@ -4,6 +4,7 @@ import gg.stoneworks.mapbot.ops.SettingsStore;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -28,11 +29,35 @@ public final class BotListener extends ListenerAdapter {
     private final String botName;
     private final CommandRegistry registry;
     private final SettingsStore settings;
+    private final boolean honoursMaintenance;
 
-    public BotListener(String botName, CommandRegistry registry, SettingsStore settings) {
+    /** The public bot, which stops answering when the bot is taken out of service. */
+    public static BotListener publicBot(String botName, CommandRegistry registry, SettingsStore settings) {
+        return new BotListener(botName, registry, settings, true);
+    }
+
+    /**
+     * The staff bot, which keeps working when the bot is out of service.
+     *
+     * <p>Maintenance describes the public service, not the control room. A panel that switched
+     * itself off along with everything else would make the kill switch one way: the only thing that
+     * can lift it is the thing maintenance had just disabled, leaving an operator editing
+     * {@code settings.json} and restarting to undo a button press.
+     */
+    public static BotListener adminBot(String botName, CommandRegistry registry, SettingsStore settings) {
+        return new BotListener(botName, registry, settings, false);
+    }
+
+    private BotListener(String botName, CommandRegistry registry, SettingsStore settings,
+                        boolean honoursMaintenance) {
         this.botName = Objects.requireNonNull(botName, "botName");
         this.registry = Objects.requireNonNull(registry, "registry");
         this.settings = Objects.requireNonNull(settings, "settings");
+        this.honoursMaintenance = honoursMaintenance;
+    }
+
+    private boolean outOfService() {
+        return honoursMaintenance && settings.maintenance();
     }
 
     @Override
@@ -59,10 +84,9 @@ public final class BotListener extends ListenerAdapter {
         // Logged before anything can go wrong, so the audit trail covers attempts rather than only
         // successes.
         LOG.info("[{}] /{} by {} in {}", botName, event.getFullCommandName(),
-                event.getUser().getId(),
-                event.getGuild() == null ? "DM" : event.getGuild().getId());
+                Who.user(event.getUser()), Who.guild(event.getGuild()));
 
-        if (settings.maintenance()) {
+        if (outOfService()) {
             reply(event, "The bot is in maintenance and will be back shortly.");
             return;
         }
@@ -80,9 +104,10 @@ public final class BotListener extends ListenerAdapter {
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
         String customId = event.getComponentId();
-        LOG.info("[{}] button {} by {}", botName, customId, event.getUser().getId());
+        LOG.info("[{}] button {} by {} in {}", botName, customId,
+                Who.user(event.getUser()), Who.guild(event.getGuild()));
 
-        if (settings.maintenance()) {
+        if (outOfService()) {
             Replies.problem(event, "The bot is in maintenance and will be back shortly.");
             return;
         }
@@ -98,6 +123,29 @@ public final class BotListener extends ListenerAdapter {
             owner.get().button(event);
         } catch (Exception e) {
             LOG.error("Button {} failed", customId, e);
+            Replies.problem(event, "Something went wrong there. It has been logged.");
+        }
+    }
+
+    @Override
+    public void onStringSelectInteraction(@NotNull StringSelectInteractionEvent event) {
+        String customId = event.getComponentId();
+        LOG.info("[{}] menu {} by {} in {}", botName, customId,
+                Who.user(event.getUser()), Who.guild(event.getGuild()));
+
+        if (outOfService()) {
+            Replies.problem(event, "The bot is in maintenance and will be back shortly.");
+            return;
+        }
+        Optional<SlashCommand> owner = Buttons.commandOf(customId).flatMap(registry::find);
+        if (owner.isEmpty() || !registry.isEnabled(owner.get())) {
+            Replies.problem(event, "That menu is no longer available.");
+            return;
+        }
+        try {
+            owner.get().select(event);
+        } catch (Exception e) {
+            LOG.error("Menu {} failed", customId, e);
             Replies.problem(event, "Something went wrong there. It has been logged.");
         }
     }

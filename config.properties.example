@@ -9,8 +9,6 @@ discord.guild.id=YOUR_GUILD_ID
 discord.channel.console=
 # Where /feedback is delivered. Leave blank to run without the command.
 discord.channel.feedback=
-# Which bot owns the presence line: public or admin. Both setting it would fight.
-discord.presence.owner=public
 # Development only. When set, the public bot registers its commands to this guild instead of
 # globally, so they appear instantly rather than taking up to an hour. Leave blank in production.
 discord.dev.guild.id=

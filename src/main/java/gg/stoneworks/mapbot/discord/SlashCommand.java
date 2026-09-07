@@ -51,6 +51,17 @@ public interface SlashCommand {
     }
 
     /**
+     * Handles a choice from a select menu this command put on one of its own messages.
+     *
+     * <p>Routed by the same {@code command:argument} prefix buttons use, so a menu and a button on
+     * the same message reach the same handler.
+     */
+    default void select(net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent event)
+            throws Exception {
+        Replies.problem(event, "That menu no longer does anything.");
+    }
+
+    /**
      * Whether this command needs its feature toggle on.
      *
      * <p>A disabled feature's commands are not registered at all, so they do not appear in Discord

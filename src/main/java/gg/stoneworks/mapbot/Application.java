@@ -10,6 +10,8 @@ import gg.stoneworks.mapbot.discord.commands.AboutCommand;
 import gg.stoneworks.mapbot.discord.FollowDispatch;
 import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
 import gg.stoneworks.mapbot.discord.commands.FollowCommand;
+import gg.stoneworks.mapbot.discord.ConsoleMirror;
+import gg.stoneworks.mapbot.discord.commands.AdminPanelCommand;
 import gg.stoneworks.mapbot.discord.commands.BanHistoryCommand;
 import gg.stoneworks.mapbot.discord.commands.FeedbackCommand;
 import gg.stoneworks.mapbot.discord.commands.FollowInfoCommand;
@@ -96,6 +98,21 @@ public final class Application implements AutoCloseable {
     /** Built once the gateway is up, since it needs a connected JDA to find a channel. */
     private FollowDispatch dispatch;
 
+    /** So coming out of maintenance can re-baseline rather than report the whole gap. */
+    private boolean wasInMaintenance;
+
+    /**
+     * The staff bot: controls, health, and the console mirror.
+     *
+     * <p>A separate Discord application in one process. Its commands are registered to the staff
+     * guild alone, so an admin control can never appear in a public server's picker, and the two
+     * tokens fail independently.
+     */
+    private DiscordBot adminBot;
+    private ConsoleMirror consoleMirror;
+
+    private final Instant startedAt = Instant.now();
+
     public Application(BotConfig config, Tokens tokens) {
         this.config = config;
         this.tokens = tokens;
@@ -178,8 +195,9 @@ public final class Application implements AutoCloseable {
                 .add(new FeedbackCommand(config.discord().feedbackChannelId()))
                 .add(new HelpCommand());
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
-                new BotListener("public", registry, settings));
+                BotListener.publicBot("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
+        startAdminBot();
         // After the gateway, because resolving a channel needs a connected client.
         dispatch = new FollowDispatch(publicBot.jda(), follows, FollowResolver.DEFAULT_MISS_TOLERANCE,
                 () -> baseMap, poller::claims, MapLink.from(config.map().markersUrl()));
@@ -189,6 +207,37 @@ public final class Application implements AutoCloseable {
         baseMapSchedule.start(this::rebuildBaseMap);
     }
 
+    /**
+     * Brings up the staff bot, if it has somewhere to be.
+     *
+     * <p>Its commands go to the staff guild rather than globally, since a guild command appears at
+     * once and there is no reason for an admin panel to exist anywhere else.
+     *
+     * <p>A failure here is logged and swallowed. The public bot is the product, and losing the
+     * control panel is not a reason to take the whole thing down.
+     */
+    private void startAdminBot() {
+        try {
+            CommandRegistry admin = new CommandRegistry(settings)
+                    .add(new AdminPanelCommand(settings, this::mapStatus, follows,
+                            this::pollOnce, this::rebuildBaseMap, startedAt));
+            adminBot = DiscordBot.connect("admin", tokens.adminBot(), admin,
+                    BotListener.adminBot("admin", admin, settings));
+            adminBot.publishCommands(Optional.of(config.discord().guildId()));
+
+            config.discord().consoleChannelId().ifPresent(channel -> {
+                consoleMirror = new ConsoleMirror(adminBot.jda(), channel);
+                consoleMirror.start();
+                consoleMirror.announce("Map Bot started.");
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("Interrupted while connecting the admin bot");
+        } catch (RuntimeException e) {
+            LOG.error("The admin bot could not start; the public bot is unaffected", e);
+        }
+    }
+
     /** What the bot is holding right now, for the commands that report on themselves. */
     private MapStatus mapStatus() {
         return MapStatus.of(poller.claims(), poller.lastUpdated(), poller.stale());
@@ -196,6 +245,19 @@ public final class Application implements AutoCloseable {
 
     /** One cycle: fetch, judge, and if it is trustworthy, act on it. */
     void pollOnce() {
+        if (settings.maintenance()) {
+            // Out of service means stop working, not just stop answering. The switch exists for
+            // when the map operator wants us to stop, and carrying on polling would ignore that.
+            wasInMaintenance = true;
+            LOG.debug("Maintenance: skipping the poll");
+            return;
+        }
+        if (wasInMaintenance) {
+            wasInMaintenance = false;
+            poller.resetBaseline();
+            LOG.info("Maintenance over; the next accepted cycle re-baselines rather than reporting");
+        }
+
         PollOutcome outcome = poller.poll();
         switch (outcome) {
             case PollOutcome.Accepted accepted -> onAccepted(accepted);
@@ -298,6 +360,10 @@ public final class Application implements AutoCloseable {
      * being available at three in the morning that was not already available at midnight.
      */
     void rebuildBaseMap() {
+        if (settings.maintenance()) {
+            LOG.info("Maintenance: skipping the base map rebuild");
+            return;
+        }
         Optional<Bbox> border = markerCache.load()
                 .flatMap(cached -> SquaremapLayerReader.readWorldBorder(cached.json()));
         if (border.isEmpty()) {
@@ -341,8 +407,16 @@ public final class Application implements AutoCloseable {
     public void close() {
         pollSchedule.close();
         baseMapSchedule.close();
+        if (consoleMirror != null) {
+            // Before the bot it posts through, and before the loggers below it go quiet.
+            consoleMirror.announce("Map Bot shutting down.");
+            consoleMirror.close();
+        }
         if (publicBot != null) {
             publicBot.close();
+        }
+        if (adminBot != null) {
+            adminBot.close();
         }
     }
 }

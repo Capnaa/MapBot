@@ -184,6 +184,17 @@ public final class MapPoller {
     }
 
     /**
+     * Makes the next accepted cycle establish a baseline instead of reporting against the old one.
+     *
+     * <p>For coming out of maintenance. The gap since the last poll is arbitrary, exactly as it is
+     * after a restart, so diffing across it would tell every follow about an hour of changes nobody
+     * watched happen, and would trip the churn guard three times on the way.
+     */
+    public void resetBaseline() {
+        baselineEstablished = false;
+    }
+
+    /**
      * Which snapshot {@link #claims()} is currently serving.
      *
      * <p>Advances on every accepted cycle and never repeats, so anything derived from a snapshot,

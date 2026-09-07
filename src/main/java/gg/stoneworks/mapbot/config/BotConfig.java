@@ -30,7 +30,6 @@ public record BotConfig(Discord discord,
     /**
      * @param guildId          the main Stoneworks guild, where the admin bot registers its commands
      * @param consoleChannelId where console output is mirrored, absent to mirror nowhere
-     * @param presenceOwner    which of the two bots sets the status line, since both would fight
      * @param feedbackChannelId where /feedback is delivered, absent to disable the command
      * @param devGuildId       when present, the public bot registers its commands there instead of
      *                         globally. Guild commands appear instantly where global ones can take
@@ -38,11 +37,8 @@ public record BotConfig(Discord discord,
      *                         and an unusable one. Unset in production.
      */
     public record Discord(String guildId, Optional<String> consoleChannelId,
-                          PresenceOwner presenceOwner, Optional<String> devGuildId,
-                          Optional<String> feedbackChannelId) {
+                          Optional<String> devGuildId, Optional<String> feedbackChannelId) {
     }
-
-    public enum PresenceOwner { PUBLIC, ADMIN }
 
     /**
      * @param markersUrl  the marker feed

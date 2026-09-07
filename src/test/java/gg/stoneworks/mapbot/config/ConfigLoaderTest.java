@@ -47,7 +47,7 @@ class ConfigLoaderTest {
         Properties broken = example();
         broken.setProperty("monitoring.interval.minutes", "soon");
         broken.setProperty("basemap.brightness", "9");
-        broken.setProperty("discord.presence.owner", "both");
+        broken.setProperty("api.bans.url", "not-a-url");
         broken.remove("discord.guild.id");
 
         ConfigException thrown = assertThrows(ConfigException.class, () -> ConfigLoader.from(broken));
