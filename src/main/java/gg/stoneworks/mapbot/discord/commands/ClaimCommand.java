@@ -6,6 +6,8 @@ import gg.stoneworks.mapbot.discord.Replies;
 import gg.stoneworks.mapbot.economy.Upkeep;
 import gg.stoneworks.mapbot.discord.SlashCommand;
 import gg.stoneworks.mapbot.geometry.Bbox;
+import gg.stoneworks.mapbot.index.NameIndex;
+import gg.stoneworks.mapbot.store.SafeFileName;
 import gg.stoneworks.mapbot.geometry.ClaimGeometry;
 import gg.stoneworks.mapbot.model.Claim;
 import gg.stoneworks.mapbot.render.BaseMapImage;
@@ -23,7 +25,6 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -38,12 +39,19 @@ public final class ClaimCommand implements SlashCommand {
     private final Supplier<List<Claim>> claims;
     private final Supplier<Optional<BaseMapImage>> baseMap;
     private final Optional<MapLink> mapLink;
+    private final Supplier<NameIndex> names;
 
     public ClaimCommand(Supplier<List<Claim>> claims, Supplier<Optional<BaseMapImage>> baseMap,
-                        Optional<MapLink> mapLink) {
+                        Optional<MapLink> mapLink, Supplier<NameIndex> names) {
         this.claims = claims;
         this.baseMap = baseMap;
         this.mapLink = mapLink;
+        this.names = names;
+    }
+
+    @Override
+    public void autocomplete(net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent event) {
+        event.replyChoiceStrings(names.get().suggest(event.getFocusedOption().getValue())).queue();
     }
 
     @Override
@@ -136,7 +144,7 @@ public final class ClaimCommand implements SlashCommand {
         }
 
         byte[] png = render(base.get(), snapshot, claim);
-        String file = "claim_" + safeName(claim.name()) + ".png";
+        String file = "claim_" + SafeFileName.of(claim.name()) + ".png";
         event.getHook()
                 .sendMessageEmbeds(embed.setImage("attachment://" + file).build())
                 .addFiles(FileUpload.fromData(png, file))
@@ -191,11 +199,5 @@ public final class ClaimCommand implements SlashCommand {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(cropped.image(), "png", out);
         return out.toByteArray();
-    }
-
-    /** Claim names carry Unicode and punctuation; Discord attachments should not. */
-    private static String safeName(String name) {
-        String cleaned = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_-]", "");
-        return cleaned.isEmpty() ? "claim" : cleaned;
     }
 }

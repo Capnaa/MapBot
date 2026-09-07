@@ -27,6 +27,16 @@ public interface SlashCommand {
     void handle(SlashCommandInteractionEvent event) throws Exception;
 
     /**
+     * Offers suggestions as the user types.
+     *
+     * <p>Discord allows three seconds and no deferring, so this must answer from memory. Anything
+     * that fetches or renders belongs in {@link #handle} instead.
+     */
+    default void autocomplete(net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent event) {
+        event.replyChoices().queue();
+    }
+
+    /**
      * Whether this command needs its feature toggle on.
      *
      * <p>A disabled feature's commands are not registered at all, so they do not appear in Discord

@@ -1,6 +1,7 @@
 package gg.stoneworks.mapbot.discord;
 
 import gg.stoneworks.mapbot.ops.SettingsStore;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -36,6 +37,19 @@ public final class BotListener extends ListenerAdapter {
     public void onReady(@NotNull ReadyEvent event) {
         LOG.info("{} connected as {} in {} guild(s)", botName,
                 event.getJDA().getSelfUser().getAsTag(), event.getGuildTotalCount());
+    }
+
+    @Override
+    public void onCommandAutoCompleteInteraction(@NotNull CommandAutoCompleteInteractionEvent event) {
+        // Not logged. This fires on every keystroke, and the invocation itself is logged anyway.
+        registry.find(event.getName()).ifPresent(command -> {
+            try {
+                command.autocomplete(event);
+            } catch (RuntimeException e) {
+                // An empty list is a fine answer. Failing here must not stop the user typing.
+                LOG.warn("Autocomplete for /{} failed", event.getName(), e);
+            }
+        });
     }
 
     @Override

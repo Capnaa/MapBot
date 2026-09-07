@@ -12,6 +12,7 @@ import gg.stoneworks.mapbot.render.BaseMapImage;
 import gg.stoneworks.mapbot.diff.ChangeSet;
 import gg.stoneworks.mapbot.diff.ChurnGuard;
 import gg.stoneworks.mapbot.geometry.Bbox;
+import gg.stoneworks.mapbot.index.NameIndex;
 import gg.stoneworks.mapbot.mapdata.SquaremapLayerReader;
 import gg.stoneworks.mapbot.monitor.ClaimIndex;
 import gg.stoneworks.mapbot.monitor.FollowCycle;
@@ -62,6 +63,9 @@ public final class Application implements AutoCloseable {
 
     /** Replaced wholesale after a rebuild, so a render always uses one image and its own calibration. */
     private volatile Optional<BaseMapImage> baseMap = Optional.empty();
+
+    /** Rebuilt when a snapshot is accepted, so suggestions match what lookups will find. */
+    private volatile NameIndex claimNames = NameIndex.empty();
     private DiscordBot publicBot;
 
     public Application(BotConfig config, Tokens tokens) {
@@ -111,7 +115,8 @@ public final class Application implements AutoCloseable {
         CommandRegistry registry = new CommandRegistry(settings)
                 .add(new AboutCommand(config.map().markersUrl().toString()))
                 .add(new ClaimCommand(poller::claims, () -> baseMap,
-                        gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl())));
+                        gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl()),
+                        () -> claimNames));
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
@@ -140,6 +145,12 @@ public final class Application implements AutoCloseable {
         LOG.info("{} claims: {} added, {} removed, {} changed ({} worth reporting), {} nation renames",
                 accepted.claimCount(), changes.added().size(), changes.removed().size(),
                 changes.modified().size(), changes.reportable().size(), changes.nationRenames().size());
+
+        // Largest first, so with nothing typed the suggestions are the lands worth looking at.
+        claimNames = NameIndex.of(poller.claims().stream()
+                .sorted(java.util.Comparator.comparingInt(gg.stoneworks.mapbot.model.Claim::chunkCount).reversed())
+                .map(gg.stoneworks.mapbot.model.Claim::name)
+                .toList());
 
         if (!settings.isEnabled(Feature.FOLLOWS)) {
             return;
