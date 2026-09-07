@@ -9,6 +9,9 @@ discord.guild.id=YOUR_GUILD_ID
 discord.channel.console=
 # Which bot owns the presence line: public or admin. Both setting it would fight.
 discord.presence.owner=public
+# Development only. When set, the public bot registers its commands to this guild instead of
+# globally, so they appear instantly rather than taking up to an hour. Leave blank in production.
+discord.dev.guild.id=
 
 ### Map data source ###
 api.markers.url=https://map.stoneworks.gg/abex/tiles/minecraft_overworld/markers.json

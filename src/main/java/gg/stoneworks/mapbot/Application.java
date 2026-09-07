@@ -2,6 +2,13 @@ package gg.stoneworks.mapbot;
 
 import gg.stoneworks.mapbot.basemap.BaseMapJob;
 import gg.stoneworks.mapbot.config.BotConfig;
+import gg.stoneworks.mapbot.config.Tokens;
+import gg.stoneworks.mapbot.discord.BotListener;
+import gg.stoneworks.mapbot.discord.CommandRegistry;
+import gg.stoneworks.mapbot.discord.DiscordBot;
+import gg.stoneworks.mapbot.discord.commands.AboutCommand;
+import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
+import gg.stoneworks.mapbot.render.BaseMapImage;
 import gg.stoneworks.mapbot.diff.ChangeSet;
 import gg.stoneworks.mapbot.diff.ChurnGuard;
 import gg.stoneworks.mapbot.geometry.Bbox;
@@ -51,9 +58,15 @@ public final class Application implements AutoCloseable {
     private final BaseMapJob baseMapJob;
     private final IntervalSchedule pollSchedule;
     private final DailySchedule baseMapSchedule;
+    private final Tokens tokens;
 
-    public Application(BotConfig config) {
+    /** Replaced wholesale after a rebuild, so a render always uses one image and its own calibration. */
+    private volatile Optional<BaseMapImage> baseMap = Optional.empty();
+    private DiscordBot publicBot;
+
+    public Application(BotConfig config, Tokens tokens) {
         this.config = config;
+        this.tokens = tokens;
 
         this.markerCache = new MarkerCache(config.paths().markerCache());
         MarkersClient markers = new MarkersClient(config.map().markersUrl(),
@@ -88,10 +101,20 @@ public final class Application implements AutoCloseable {
         return new Settings(false, enabled);
     }
 
-    public void start() {
+    public void start() throws InterruptedException {
         LOG.info("Starting: polling {} every {}s, base map rebuild at {} {}",
                 config.map().markersUrl(), config.monitoring().pollInterval().toSeconds(),
                 config.baseMap().rebuildAt(), config.baseMap().zone());
+
+        reloadBaseMap();
+
+        CommandRegistry registry = new CommandRegistry(settings)
+                .add(new AboutCommand(config.map().markersUrl().toString()))
+                .add(new ClaimCommand(poller::claims, () -> baseMap,
+                        gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl())));
+        publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
+                new BotListener("public", registry, settings));
+        publicBot.publishCommands(config.discord().devGuildId());
         // The first poll runs at once so a misconfiguration surfaces on startup rather than a
         // minute later, when whoever deployed it has stopped watching.
         pollSchedule.start(this::pollOnce, true);
@@ -151,8 +174,27 @@ public final class Application implements AutoCloseable {
             LOG.info("Base map rebuilt: {} tiles, {} missing, {} blocks per pixel",
                     result.tilesFetched(), result.tilesMissing(),
                     String.format("%.2f", 1 / result.calibration().scale()));
+            // Picked up straight away, so a rebuild does not need a restart to take effect.
+            reloadBaseMap();
         } catch (IOException e) {
             LOG.error("Base map rebuild failed; the previous map is still in place", e);
+        }
+    }
+
+    /**
+     * Loads the base map if one has been built.
+     *
+     * <p>Absent is a normal state, not an error: a fresh deployment has no base map until the first
+     * rebuild, and the lookup commands say so rather than failing.
+     */
+    private void reloadBaseMap() {
+        try {
+            baseMap = Optional.of(BaseMapImage.load(config.paths().baseMapImage(),
+                    config.paths().baseMapCalibration()));
+            LOG.info("Base map loaded: {} x {} px", baseMap.get().width(), baseMap.get().height());
+        } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+            baseMap = Optional.empty();
+            LOG.warn("No usable base map yet ({}); lookups will answer without pictures", e.getMessage());
         }
     }
 
@@ -164,5 +206,8 @@ public final class Application implements AutoCloseable {
     public void close() {
         pollSchedule.close();
         baseMapSchedule.close();
+        if (publicBot != null) {
+            publicBot.close();
+        }
     }
 }

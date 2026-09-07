@@ -144,6 +144,18 @@ public final class MapPoller {
         return current;
     }
 
+    /**
+     * Whether a trustworthy snapshot has been accepted yet.
+     *
+     * <p>Distinct from having no claims. For the first two cycles after startup the stability gate
+     * is still deciding whether to believe the map, and during that window "no claim by that name"
+     * would be a lie: the claim exists, the bot has not finished starting. Commands need to tell
+     * the two apart, because one is worth waiting a minute for and the other is not.
+     */
+    public boolean hasSnapshot() {
+        return !current.isEmpty();
+    }
+
     /** True when the map went offline and the snapshot above is older than one cycle. */
     public boolean stale() {
         return stale;

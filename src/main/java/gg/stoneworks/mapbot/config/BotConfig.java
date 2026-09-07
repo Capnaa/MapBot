@@ -31,8 +31,13 @@ public record BotConfig(Discord discord,
      * @param guildId          the main Stoneworks guild, where the admin bot registers its commands
      * @param consoleChannelId where console output is mirrored, absent to mirror nowhere
      * @param presenceOwner    which of the two bots sets the status line, since both would fight
+     * @param devGuildId       when present, the public bot registers its commands there instead of
+     *                         globally. Guild commands appear instantly where global ones can take
+     *                         an hour, which is the difference between a usable development loop
+     *                         and an unusable one. Unset in production.
      */
-    public record Discord(String guildId, Optional<String> consoleChannelId, PresenceOwner presenceOwner) {
+    public record Discord(String guildId, Optional<String> consoleChannelId,
+                          PresenceOwner presenceOwner, Optional<String> devGuildId) {
     }
 
     public enum PresenceOwner { PUBLIC, ADMIN }

@@ -55,7 +55,8 @@ public final class ConfigLoader {
                 new BotConfig.Discord(
                         required("discord.guild.id"),
                         optional("discord.channel.console"),
-                        presenceOwner()),
+                        presenceOwner(),
+                        optional("discord.dev.guild.id")),
                 new BotConfig.MapSource(
                         uri("api.markers.url"),
                         baseUrl("api.tiles.url"),
