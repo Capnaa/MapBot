@@ -66,6 +66,7 @@ public final class Application implements AutoCloseable {
 
     /** Rebuilt when a snapshot is accepted, so suggestions match what lookups will find. */
     private volatile NameIndex claimNames = NameIndex.empty();
+    private volatile NameIndex nationNames = NameIndex.empty();
     private DiscordBot publicBot;
 
     public Application(BotConfig config, Tokens tokens) {
@@ -111,12 +112,19 @@ public final class Application implements AutoCloseable {
                 config.baseMap().rebuildAt(), config.baseMap().zone());
 
         reloadBaseMap();
+        // Before any command can be run, so a lookup during the first poll interval answers from
+        // the cache rather than claiming the land does not exist.
+        poller.seedFromCache();
+        rebuildNameIndexes();
 
         CommandRegistry registry = new CommandRegistry(settings)
                 .add(new AboutCommand(config.map().markersUrl().toString()))
                 .add(new ClaimCommand(poller::claims, () -> baseMap,
                         gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl()),
-                        () -> claimNames));
+                        () -> claimNames))
+                .add(new gg.stoneworks.mapbot.discord.commands.NationCommand(poller::claims, () -> baseMap,
+                        gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl()),
+                        () -> nationNames));
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
@@ -142,17 +150,17 @@ public final class Application implements AutoCloseable {
 
     private void onAccepted(PollOutcome.Accepted accepted) {
         ChangeSet changes = accepted.changes();
-        LOG.info("{} claims: {} added, {} removed, {} changed ({} worth reporting), {} nation renames",
-                accepted.claimCount(), changes.added().size(), changes.removed().size(),
-                changes.modified().size(), changes.reportable().size(), changes.nationRenames().size());
+        if (accepted.baseline()) {
+            LOG.info("{} claims loaded", accepted.claimCount());
+        } else {
+            LOG.info("{} claims: {} added, {} removed, {} changed ({} worth reporting), {} nation renames",
+                    accepted.claimCount(), changes.added().size(), changes.removed().size(),
+                    changes.modified().size(), changes.reportable().size(), changes.nationRenames().size());
+        }
 
-        // Largest first, so with nothing typed the suggestions are the lands worth looking at.
-        claimNames = NameIndex.of(poller.claims().stream()
-                .sorted(java.util.Comparator.comparingInt(gg.stoneworks.mapbot.model.Claim::chunkCount).reversed())
-                .map(gg.stoneworks.mapbot.model.Claim::name)
-                .toList());
+        rebuildNameIndexes();
 
-        if (!settings.isEnabled(Feature.FOLLOWS)) {
+        if (accepted.baseline() || !settings.isEnabled(Feature.FOLLOWS)) {
             return;
         }
         try {
@@ -165,6 +173,26 @@ public final class Application implements AutoCloseable {
             // Losing this cycle's follow updates is bad; stopping the poll loop is worse.
             LOG.error("Follow cycle failed", e);
         }
+    }
+
+    /** Keeps autocomplete in step with what a lookup will actually find. */
+    private void rebuildNameIndexes() {
+        // Largest first, so with nothing typed the suggestions are the lands worth looking at.
+        claimNames = NameIndex.of(poller.claims().stream()
+                .sorted(java.util.Comparator.comparingInt(gg.stoneworks.mapbot.model.Claim::chunkCount).reversed())
+                .map(gg.stoneworks.mapbot.model.Claim::name)
+                .toList());
+
+        // Nations ranked by how much land they hold, so an empty box offers the ones worth looking at.
+        java.util.Map<String, Integer> chunksByNation = new java.util.LinkedHashMap<>();
+        for (gg.stoneworks.mapbot.model.Claim claim : poller.claims()) {
+            claim.nation().ifPresent(n ->
+                    chunksByNation.merge(n.name(), claim.chunkCount(), Integer::sum));
+        }
+        nationNames = NameIndex.of(chunksByNation.entrySet().stream()
+                .sorted(java.util.Map.Entry.<String, Integer>comparingByValue().reversed())
+                .map(java.util.Map.Entry::getKey)
+                .toList());
     }
 
     /**

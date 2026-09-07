@@ -32,7 +32,7 @@ public final class ClaimDiffer {
     }
 
     /**
-     * @param before previous snapshot, empty on the first cycle after startup
+     * @param before previous snapshot
      * @param after  snapshot just fetched
      * @return every claim in {@code after} classified, plus those only in {@code before} as removed
      */

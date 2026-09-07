@@ -115,6 +115,27 @@ public final class ClaimOverlayRenderer {
         return canvas;
     }
 
+    /**
+     * How much to enlarge a region without producing an unreasonable image.
+     *
+     * <p>A single settlement crops to a couple of hundred pixels and can afford four times the
+     * detail. A nation spanning half the world crops to thousands, and enlarging that would produce
+     * an image too large to upload for detail nobody can see at the size Discord renders it.
+     *
+     * @param region  the crop being drawn
+     * @param maximum the largest edge the finished image should have
+     */
+    public static int detailFactorFor(Rectangle region, int maximum) {
+        int longest = Math.max(region.width, region.height);
+        if (longest <= 0) {
+            return 1;
+        }
+        return Math.max(1, Math.min(MAX_DETAIL, maximum / longest));
+    }
+
+    /** Past this the terrain is visibly enlarged pixels and the bytes buy nothing. */
+    private static final int MAX_DETAIL = 4;
+
     /** A claim and the way this particular picture wants it drawn. */
     public record StyledClaim(Claim claim, ClaimStyle style) {
 

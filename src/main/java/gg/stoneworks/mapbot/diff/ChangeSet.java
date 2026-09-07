@@ -33,6 +33,17 @@ public record ChangeSet(List<Claim> added,
     }
 
     /**
+     * A snapshot with nothing to report, for a cycle that establishes the baseline rather than
+     * comparing against one.
+     *
+     * <p>Every claim lands in {@code unchanged}, so the totals and the context layer are still
+     * correct and only the reporting paths see an empty set.
+     */
+    public static ChangeSet nothingChanged(List<Claim> claims) {
+        return new ChangeSet(List.of(), List.of(), List.of(), List.of(), claims);
+    }
+
+    /**
      * Modifications worth telling someone about.
      *
      * <p>Land banks tick and member counts drift constantly. Notifying on those would make a follow

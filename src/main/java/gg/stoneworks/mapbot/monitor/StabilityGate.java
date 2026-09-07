@@ -83,6 +83,25 @@ public final class StabilityGate {
         return Verdict.HOLD;
     }
 
+    /**
+     * Supplies a count from outside the poll loop, so the next fetch has something to compare
+     * against.
+     *
+     * <p>Exists for the cached payload on disk. That count came off the same map and is the shape
+     * the map settles at, so a live fetch matching it is settled by the only test this gate applies.
+     * Without it every restart burns a full poll interval proving a number it already had.
+     *
+     * <p>Ignored once anything has been seen. A count from disk must never displace one observed
+     * this run.
+     */
+    public void seed(int claimCount) {
+        if (lastSeenCount != null) {
+            return;
+        }
+        lastSeenCount = claimCount;
+        LOG.info("Seeded with {} claims from cache", claimCount);
+    }
+
     /** Forgets what it has seen, so the next fetch is treated as a first fetch. */
     public void reset() {
         lastSeenCount = null;

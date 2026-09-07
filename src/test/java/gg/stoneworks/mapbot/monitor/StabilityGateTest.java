@@ -93,4 +93,22 @@ class StabilityGateTest {
         assertThrows(IllegalArgumentException.class, () -> new StabilityGate(-1, 5));
         assertThrows(IllegalArgumentException.class, () -> new StabilityGate(10, 0));
     }
+
+    @Test
+    void treatsASeededCountAsAFirstFetchAlreadyMade() {
+        StabilityGate gate = new StabilityGate(10, 5);
+        gate.seed(2400);
+
+        assertEquals(StabilityGate.Verdict.SETTLED, gate.evaluate(2400));
+    }
+
+    @Test
+    void doesNotLetASeedDisplaceWhatItHasSeen() {
+        StabilityGate gate = new StabilityGate(10, 5);
+        gate.evaluate(2400);
+
+        gate.seed(50);
+
+        assertEquals(StabilityGate.Verdict.SETTLED, gate.evaluate(2400));
+    }
 }

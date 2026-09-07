@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -167,6 +168,71 @@ class MapPollerTest {
                 new MarkersResponse.Changed("[{\"id\":\"squaremap-spawn_icon\",\"markers\":[]}]", "a")));
 
         assertInstanceOf(PollOutcome.Failed.class, poller.poll());
+    }
+
+    @Test
+    void answersFromTheCacheAndAcceptsTheFirstLiveFetch(@TempDir Path dir) throws IOException {
+        MarkerCache cache = new MarkerCache(dir.resolve("markers.json"));
+        cache.store(Payloads.withClaims(50));
+        MapPoller poller = new MapPoller(scripted(changed(50, "a")), cache,
+                ChurnGuard.withDefaults(), new StabilityGate(10, 5));
+
+        poller.seedFromCache();
+
+        assertEquals(50, poller.claims().size(), "lookups work before the first fetch returns");
+        assertTrue(poller.stale(), "cached data is labelled stale until a live fetch confirms it");
+
+        assertInstanceOf(PollOutcome.Accepted.class, poller.poll(), "no cycle wasted on a count it had");
+        assertFalse(poller.stale());
+    }
+
+    @Test
+    void holdsWhenTheLiveMapDisagreesWithTheCache(@TempDir Path dir) throws IOException {
+        // A cache from before a mass event, or from a map that has since restarted, is not a
+        // licence to publish the first thing that arrives.
+        MarkerCache cache = new MarkerCache(dir.resolve("markers.json"));
+        cache.store(Payloads.withClaims(50));
+        MapPoller poller = new MapPoller(scripted(changed(2400, "a"), changed(2400, "b")),
+                cache, ChurnGuard.withDefaults(), new StabilityGate(10, 5));
+
+        poller.seedFromCache();
+
+        assertInstanceOf(PollOutcome.Held.class, poller.poll());
+        assertEquals(50, poller.claims().size(), "the cached snapshot stands while the gate decides");
+        assertInstanceOf(PollOutcome.Accepted.class, poller.poll());
+        assertEquals(2400, poller.claims().size());
+    }
+
+    @Test
+    void reportsNothingOnTheCycleThatSetsTheBaseline() {
+        // Otherwise every restart tells every follow that the whole server was just created.
+        MapPoller poller = poller(scripted(changed(50, "a"), changed(50, "b"),
+                changed(52, "c")));
+
+        poller.poll();
+        PollOutcome.Accepted baseline = assertInstanceOf(PollOutcome.Accepted.class, poller.poll());
+
+        assertTrue(baseline.baseline());
+        assertEquals(0, baseline.changes().added().size());
+        assertEquals(50, baseline.changes().unchanged().size(), "all of it is context, none of it news");
+
+        PollOutcome.Accepted next = assertInstanceOf(PollOutcome.Accepted.class, poller.poll());
+
+        assertFalse(next.baseline());
+        assertEquals(2, next.changes().added().size(), "real changes are reported from then on");
+    }
+
+    @Test
+    void ignoresAnUnusableCache(@TempDir Path dir) throws IOException {
+        MarkerCache cache = new MarkerCache(dir.resolve("markers.json"));
+        cache.store("[{\"id\":\"squaremap-spawn_icon\",\"markers\":[]}]");
+        MapPoller poller = new MapPoller(scripted(changed(50, "a"), changed(50, "b")),
+                cache, ChurnGuard.withDefaults(), new StabilityGate(10, 5));
+
+        poller.seedFromCache();
+
+        assertTrue(poller.claims().isEmpty());
+        assertInstanceOf(PollOutcome.Held.class, poller.poll(), "falls back to earning the baseline");
     }
 
     @Test

@@ -24,6 +24,7 @@ public final class Embeds {
     /** Discord rejects an embed description past this, so text is cut before it is sent. */
     public static final int MAX_DESCRIPTION = 4096;
     public static final int MAX_FIELD_VALUE = 1024;
+    public static final int MAX_FIELD_NAME = 256;
 
     private static final DecimalFormat PLAIN = new DecimalFormat("#,##0");
     private static final DecimalFormat SHORT = new DecimalFormat("#,##0.#");
@@ -49,6 +50,18 @@ public final class Embeds {
 
     public static String count(long value) {
         return PLAIN.format(value);
+    }
+
+    /**
+     * Adds a field, cut to what Discord will accept.
+     *
+     * <p>Discord rejects an over-long field outright rather than truncating it, so the whole reply
+     * fails on one long value. Going through here means a command cannot be brought down by a
+     * nation with unusually many lands or a player with a very long name.
+     */
+    public static net.dv8tion.jda.api.EmbedBuilder field(net.dv8tion.jda.api.EmbedBuilder embed,
+                                                         String name, String value, boolean inline) {
+        return embed.addField(clamp(name, MAX_FIELD_NAME), clamp(value, MAX_FIELD_VALUE), inline);
     }
 
     /** Cuts to a limit on a word boundary where it can, so a reply is never rejected outright. */

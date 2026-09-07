@@ -53,6 +53,7 @@ public final class MapPoller {
     private String etag;
     private List<Claim> current = List.of();
     private boolean stale;
+    private boolean baselineEstablished;
     private int consecutiveRejections;
 
     public MapPoller(MarkersSource source,
@@ -63,6 +64,42 @@ public final class MapPoller {
         this.cache = cache;
         this.churnGuard = Objects.requireNonNull(churnGuard, "churnGuard");
         this.stabilityGate = Objects.requireNonNull(stabilityGate, "stabilityGate");
+    }
+
+    /**
+     * Answers from the cached payload until the first live fetch lands.
+     *
+     * <p>Call before the first poll. The snapshot is marked stale, so anything served from it says
+     * so, and the stability gate is given the cached claim count so the first live fetch has
+     * something to be measured against instead of costing a poll interval.
+     *
+     * <p>No ETag is restored. The cache holds the payload, not the validator it arrived with, and
+     * inventing one would risk a 304 against a body the bot does not have.
+     *
+     * <p>A cache that is missing, corrupt or unparseable is the ordinary first-deployment case and
+     * leaves the poller exactly as it was.
+     */
+    public void seedFromCache() {
+        if (cache == null || baselineEstablished || !current.isEmpty()) {
+            return;
+        }
+        cache.load().ifPresent(cached -> {
+            List<Claim> claims;
+            try {
+                claims = SquaremapLayerReader.readClaims(cached.json());
+            } catch (MalformedMarkersException e) {
+                LOG.warn("Ignoring the cached payload: {}", e.getMessage());
+                return;
+            }
+            if (claims.isEmpty()) {
+                return;
+            }
+            current = claims;
+            stale = true;
+            stabilityGate.seed(claims.size());
+            LOG.info("Serving {} claims from the cache written at {} until the first live fetch",
+                    claims.size(), cached.fetchedAt());
+        });
     }
 
     /**
@@ -109,8 +146,20 @@ public final class MapPoller {
             return new PollOutcome.Held(claims.size());
         }
 
+        if (!baselineEstablished) {
+            // Nothing to diff against that means anything. An empty baseline reports the whole
+            // server as new, and a cached one reports however much moved while the bot was down,
+            // which for a redeploy after a day is a day of notifications nobody asked for. The
+            // churn guard is skipped for the same reason: it would reject that gap three times
+            // before being overruled anyway.
+            publish(claims, changed.etag(), changed.json());
+            baselineEstablished = true;
+            LOG.info("Baseline set at {} claims; reporting starts from the next cycle", claims.size());
+            return new PollOutcome.Accepted(ChangeSet.nothingChanged(claims), claims.size(), true);
+        }
+
         ChangeSet changes = ClaimDiffer.diff(current, claims);
-        if (!current.isEmpty() && !churnGuard.plausible(changes)) {
+        if (!churnGuard.plausible(changes)) {
             consecutiveRejections++;
             if (consecutiveRejections < MAX_CONSECUTIVE_REJECTIONS) {
                 // Same reasoning as the gate: no ETag update, so the next cycle sees the payload
@@ -126,19 +175,22 @@ public final class MapPoller {
         }
 
         consecutiveRejections = 0;
+        publish(claims, changed.etag(), changed.json());
+
+        return new PollOutcome.Accepted(changes, claims.size(), false);
+    }
+
+    private void publish(List<Claim> claims, String newEtag, String json) {
         current = claims;
         stale = false;
-        etag = changed.etag();
-        writeCache(changed.json());
-
-        return new PollOutcome.Accepted(changes, claims.size());
+        etag = newEtag;
+        writeCache(json);
     }
 
     /**
      * The most recent trusted snapshot, which every command reads.
      *
-     * <p>Empty until the first cycle is accepted, which takes two fetches because the stability
-     * gate cannot verify the first one against anything.
+     * <p>Empty only on a deployment with no cached payload, until the first cycle is accepted.
      */
     public List<Claim> claims() {
         return current;
@@ -147,10 +199,10 @@ public final class MapPoller {
     /**
      * Whether a trustworthy snapshot has been accepted yet.
      *
-     * <p>Distinct from having no claims. For the first two cycles after startup the stability gate
-     * is still deciding whether to believe the map, and during that window "no claim by that name"
-     * would be a lie: the claim exists, the bot has not finished starting. Commands need to tell
-     * the two apart, because one is worth waiting a minute for and the other is not.
+     * <p>Distinct from having no claims. While the stability gate is still deciding whether to
+     * believe the map, "no claim by that name" would be a lie: the claim exists, the bot has not
+     * finished starting. Commands need to tell the two apart, because one is worth waiting a
+     * minute for and the other is not.
      */
     public boolean hasSnapshot() {
         return !current.isEmpty();

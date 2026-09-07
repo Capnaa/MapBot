@@ -3,6 +3,7 @@ package gg.stoneworks.mapbot.discord;
 import gg.stoneworks.mapbot.ops.SettingsStore;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Routes interactions to commands, and makes sure something always answers.
@@ -73,6 +75,31 @@ public final class BotListener extends ListenerAdapter {
             }
             run(command, event);
         }, () -> reply(event, "That command is no longer available."));
+    }
+
+    @Override
+    public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
+        String customId = event.getComponentId();
+        LOG.info("[{}] button {} by {}", botName, customId, event.getUser().getId());
+
+        if (settings.maintenance()) {
+            Replies.problem(event, "The bot is in maintenance and will be back shortly.");
+            return;
+        }
+
+        // Buttons outlive the message they were sent on, so every one of these is a real case: a
+        // command removed, a feature switched off, a button from a previous build.
+        Optional<SlashCommand> owner = Buttons.commandOf(customId).flatMap(registry::find);
+        if (owner.isEmpty() || !registry.isEnabled(owner.get())) {
+            Replies.problem(event, "That button is no longer available.");
+            return;
+        }
+        try {
+            owner.get().button(event);
+        } catch (Exception e) {
+            LOG.error("Button {} failed", customId, e);
+            Replies.problem(event, "Something went wrong there. It has been logged.");
+        }
     }
 
     private void run(SlashCommand command, SlashCommandInteractionEvent event) {

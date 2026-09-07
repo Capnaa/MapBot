@@ -37,6 +37,20 @@ public interface SlashCommand {
     }
 
     /**
+     * Handles a click on a button this command put on one of its own messages.
+     *
+     * <p>Routed by the {@code command:argument} prefix in the custom ID, so a command only ever
+     * sees its own buttons. The click carries nothing but that ID: the message may be days old and
+     * whatever was in memory when it was sent is gone, so the argument has to be enough on its own.
+     *
+     * <p>Same three second rule as {@link #handle}.
+     */
+    default void button(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event)
+            throws Exception {
+        Replies.problem(event, "That button no longer does anything.");
+    }
+
+    /**
      * Whether this command needs its feature toggle on.
      *
      * <p>A disabled feature's commands are not registered at all, so they do not appear in Discord
