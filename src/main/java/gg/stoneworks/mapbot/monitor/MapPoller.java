@@ -14,8 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * One fetch, parse, diff and publish, run on a schedule.
@@ -60,6 +62,7 @@ public final class MapPoller {
     private boolean baselineEstablished;
     private int consecutiveRejections;
     private long version;
+    private Instant lastUpdated;
 
     public MapPoller(MarkersSource source,
                      MarkerCache cache,
@@ -101,6 +104,8 @@ public final class MapPoller {
             }
             current = claims;
             stale = true;
+            // The cache's own timestamp, not now. Answers from it are as old as the file.
+            lastUpdated = cached.fetchedAt();
             stabilityGate.seed(claims.size());
             LOG.info("Serving {} claims from the cache written at {} until the first live fetch",
                     claims.size(), cached.fetchedAt());
@@ -192,6 +197,7 @@ public final class MapPoller {
 
     private void publish(List<Claim> claims, String newEtag, String json) {
         version++;
+        lastUpdated = Instant.now();
         current = claims;
         stale = false;
         etag = newEtag;
@@ -217,6 +223,17 @@ public final class MapPoller {
      */
     public boolean hasSnapshot() {
         return !current.isEmpty();
+    }
+
+    /**
+     * When the snapshot being served was read.
+     *
+     * <p>Empty before anything has been read at all. Seeded from the cache file's own timestamp
+     * rather than from startup, because an answer taken from a file written yesterday is a day old
+     * however recently the process began.
+     */
+    public Optional<Instant> lastUpdated() {
+        return Optional.ofNullable(lastUpdated);
     }
 
     /** True when the map went offline and the snapshot above is older than one cycle. */

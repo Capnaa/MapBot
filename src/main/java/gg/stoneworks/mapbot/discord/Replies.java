@@ -34,4 +34,27 @@ public final class Replies {
             event.reply(message).setEphemeral(true).queue();
         }
     }
+
+    /**
+     * Reports a failure that only became apparent after the command started its slow work.
+     *
+     * <p>Deferring publicly puts a "thinking" placeholder in the channel, and Discord will not let
+     * that become ephemeral later. So the placeholder is deleted and the failure sent as an
+     * ephemeral follow-up: the person who asked is told, and the channel is left with nothing
+     * rather than a stray message about a panel being down.
+     *
+     * <p>Only for a deferred reply that has not yet been filled in. Called after real content has
+     * been sent, this would delete that content.
+     */
+    public static void failedAfterDeferring(IReplyCallback event, String message) {
+        if (!event.isAcknowledged()) {
+            event.reply(message).setEphemeral(true).queue();
+            return;
+        }
+        // Deleting first, so the follow-up is not chasing a placeholder that outlives it. A failed
+        // delete is not worth compounding: say it anyway rather than leaving them with nothing.
+        event.getHook().deleteOriginal().queue(
+                deleted -> event.getHook().sendMessage(message).setEphemeral(true).queue(),
+                error -> event.getHook().sendMessage(message).setEphemeral(true).queue());
+    }
 }

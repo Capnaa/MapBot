@@ -106,9 +106,10 @@ public final class BotListener extends ListenerAdapter {
         try {
             command.handle(event);
         } catch (Exception e) {
-            // The user gets something plain; the detail goes to the log where it is useful.
+            // The user gets something plain; the detail goes to the log where it is useful. Only
+            // they see it: a command that failed halfway is not news for the channel.
             LOG.error("/{} failed", event.getFullCommandName(), e);
-            reply(event, "Something went wrong running that. It has been logged.");
+            Replies.failedAfterDeferring(event, "Something went wrong running that. It has been logged.");
         }
     }
 

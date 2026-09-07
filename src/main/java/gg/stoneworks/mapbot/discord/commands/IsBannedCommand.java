@@ -56,7 +56,8 @@ public final class IsBannedCommand implements SlashCommand {
         } catch (IOException e) {
             // Never answer "not banned" because the panel was unreachable. That is the one wrong
             // answer this command can give, and it is the one people would act on.
-            Replies.problem(event, "The ban panel is not answering, so this cannot be checked now.");
+            Replies.failedAfterDeferring(event,
+                    "The ban panel is not answering, so this cannot be checked right now.");
             return;
         }
 

@@ -54,7 +54,8 @@ public final class BanHistoryCommand implements SlashCommand {
         try {
             record = bans.lookUp(wanted);
         } catch (IOException e) {
-            Replies.problem(event, "The ban panel is not answering, so this cannot be checked now.");
+            Replies.failedAfterDeferring(event,
+                    "The ban panel is not answering, so this cannot be checked right now.");
             return;
         }
 

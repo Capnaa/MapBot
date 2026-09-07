@@ -11,11 +11,15 @@ import gg.stoneworks.mapbot.discord.FollowDispatch;
 import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
 import gg.stoneworks.mapbot.discord.commands.FollowCommand;
 import gg.stoneworks.mapbot.discord.commands.BanHistoryCommand;
+import gg.stoneworks.mapbot.discord.commands.FeedbackCommand;
+import gg.stoneworks.mapbot.discord.commands.FollowInfoCommand;
+import gg.stoneworks.mapbot.discord.commands.HelpCommand;
 import gg.stoneworks.mapbot.discord.commands.IsBannedCommand;
 import gg.stoneworks.mapbot.discord.commands.PlayerCommand;
 import gg.stoneworks.mapbot.discord.commands.NationCommand;
 import gg.stoneworks.mapbot.discord.commands.TopCommand;
 import gg.stoneworks.mapbot.discord.MapLink;
+import gg.stoneworks.mapbot.discord.MapStatus;
 import gg.stoneworks.mapbot.render.BaseMapImage;
 import gg.stoneworks.mapbot.render.RenderCache;
 import gg.stoneworks.mapbot.diff.ChangeSet;
@@ -153,7 +157,7 @@ public final class Application implements AutoCloseable {
         rebuildNameIndexes();
 
         CommandRegistry registry = new CommandRegistry(settings)
-                .add(new AboutCommand(config.map().markersUrl().toString()))
+                .add(new AboutCommand(this::mapStatus))
                 .add(new ClaimCommand(poller::claims, () -> baseMap,
                         MapLink.from(config.map().markersUrl()),
                         () -> claimNames))
@@ -170,6 +174,9 @@ public final class Application implements AutoCloseable {
         bans().ifPresent(lookup -> registry
                 .add(new IsBannedCommand(lookup))
                 .add(new BanHistoryCommand(lookup)));
+        registry.add(new FollowInfoCommand())
+                .add(new FeedbackCommand(config.discord().feedbackChannelId()))
+                .add(new HelpCommand());
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
@@ -180,6 +187,11 @@ public final class Application implements AutoCloseable {
         // minute later, when whoever deployed it has stopped watching.
         pollSchedule.start(this::pollOnce, true);
         baseMapSchedule.start(this::rebuildBaseMap);
+    }
+
+    /** What the bot is holding right now, for the commands that report on themselves. */
+    private MapStatus mapStatus() {
+        return MapStatus.of(poller.claims(), poller.lastUpdated(), poller.stale());
     }
 
     /** One cycle: fetch, judge, and if it is trustworthy, act on it. */
