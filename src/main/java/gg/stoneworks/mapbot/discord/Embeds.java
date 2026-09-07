@@ -64,6 +64,34 @@ public final class Embeds {
         return embed.addField(clamp(name, MAX_FIELD_NAME), clamp(value, MAX_FIELD_VALUE), inline);
     }
 
+    /**
+     * A name from the map, safe to drop into text Discord will format.
+     *
+     * <p>Land, nation and player names are written by players, and Discord reads some of what they
+     * type as formatting. Across a full snapshot the only such character that occurs is the
+     * underscore: land and nation names use {@code _ - ' . ! ?} and nothing else, and a Minecraft
+     * username can only ever be letters, digits and underscores.
+     *
+     * <p>Underscores inside a word are inert, so most of the 165 names carrying one are fine on
+     * their own. The breakage is ours: wrapping a name in {@code **} puts an asterisk directly
+     * against a leading or trailing underscore and turns it into a valid delimiter, which is why
+     * {@code Ace_OfHearts__} renders as underlined text and loses its underscores. 138 names on the
+     * map end or begin with one.
+     *
+     * <p>Asterisks are escaped too. None appear on the map today, but nothing about the plugin
+     * promises that, and one costs a backslash.
+     *
+     * <p><strong>Not for text inside a code fence.</strong> Markdown is inert there, so the
+     * backslashes would be printed rather than consumed. The land table in {@code /nation} passes
+     * names through raw, and safely, since a backtick cannot appear in one.
+     */
+    public static String name(String text) {
+        return ESCAPE_ME.matcher(text).replaceAll("\\\\$0");
+    }
+
+    /** The two characters worth escaping, given what a name can actually contain. */
+    private static final java.util.regex.Pattern ESCAPE_ME = java.util.regex.Pattern.compile("[_*]");
+
     /** Cuts to a limit on a word boundary where it can, so a reply is never rejected outright. */
     public static String clamp(String text, int limit) {
         if (text.length() <= limit) {

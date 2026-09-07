@@ -93,7 +93,7 @@ public final class ClaimCommand implements SlashCommand {
                 .filter(c -> c.name().equalsIgnoreCase(wanted))
                 .findFirst();
         if (found.isEmpty()) {
-            Replies.problem(event, "No claim called **" + wanted + "** is on the map.");
+            Replies.problem(event, "No claim called **" + Embeds.name(wanted) + "** is on the map.");
             return;
         }
 
@@ -112,8 +112,8 @@ public final class ClaimCommand implements SlashCommand {
         // Inline fields pack three to a row, so these read as two tidy rows rather than a wall.
         embed.addField("Balance", Upkeep.money(claim.balance()), true)
                 .addField("Chunks", Embeds.count(claim.chunkCount()), true)
-                .addField("Nation", claim.nation().map(n -> n.name()).orElse("None"), true)
-                .addField("Owner", claim.members().owner().orElse("Unknown"), true)
+                .addField("Nation", Embeds.name(claim.nation().map(n -> n.name()).orElse("None")), true)
+                .addField("Owner", Embeds.name(claim.members().owner().orElse("Unknown")), true)
                 .addField("Members", Embeds.count(claim.members().declared()), true);
         ClaimGeometry.anchor(claim).ifPresent(at ->
                 embed.addField("Position", "X " + at.x() + ", Z " + at.z(), true));

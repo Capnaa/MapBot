@@ -148,14 +148,14 @@ public final class FollowCommand implements SlashCommand {
         String wanted = event.getOption("name").getAsString();
         Optional<Claim> found = byFoldedName(wanted);
         if (found.isEmpty()) {
-            Replies.problem(event, "No claim called **" + wanted + "** is on the map.");
+            Replies.problem(event, "No claim called **" + Embeds.name(wanted) + "** is on the map.");
             return;
         }
         Claim claim = found.get();
         Optional<gg.stoneworks.mapbot.model.Point> anchor = ClaimGeometry.anchor(claim);
         if (anchor.isEmpty()) {
             // No usable geometry means nothing to re-anchor against next cycle.
-            Replies.problem(event, "**" + claim.name() + "** has no shape the bot can track.");
+            Replies.problem(event, "**" + Embeds.name(claim.name()) + "** has no shape the bot can track.");
             return;
         }
         add(event, new Follow.Target.Land(ClaimGeometry.signature(claim), anchor.get(), claim.name()));
@@ -170,7 +170,7 @@ public final class FollowCommand implements SlashCommand {
                 .map(gg.stoneworks.mapbot.model.Nation::name)
                 .findFirst();
         if (actual.isEmpty()) {
-            Replies.problem(event, "No nation called **" + wanted + "** holds any land.");
+            Replies.problem(event, "No nation called **" + Embeds.name(wanted) + "** holds any land.");
             return;
         }
         // Stored as the map spells it, so a rename can be matched against it later.

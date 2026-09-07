@@ -69,7 +69,7 @@ public final class ChangeReport {
      * into a map address still produces a readable report.
      */
     public static String nameOf(Claim claim, Optional<MapLink> map) {
-        String bold = "**" + claim.name() + "**";
+        String bold = "**" + Embeds.name(claim.name()) + "**";
         return map.flatMap(link -> link.forClaim(claim))
                 .map(url -> "[" + bold + "](" + url + ")")
                 .orElse(bold);
@@ -93,7 +93,7 @@ public final class ChangeReport {
     }
 
     private static String rename(ChangeSet.NationRename change) {
-        return "**" + change.from() + "** is now **" + change.to() + "** ("
+        return "**" + Embeds.name(change.from()) + "** is now **" + Embeds.name(change.to()) + "** ("
                 + Embeds.count(change.claims().size())
                 + (change.claims().size() == 1 ? " claim)" : " claims)");
     }
@@ -119,11 +119,11 @@ public final class ChangeReport {
         List<String> what = new ArrayList<>(3);
 
         if (change.changed(ChangeSet.Aspect.NAME)) {
-            what.add("renamed from **" + before.name() + "**");
+            what.add("renamed from **" + Embeds.name(before.name()) + "**");
         }
         if (change.changed(ChangeSet.Aspect.OWNER)) {
-            what.add("owner is now " + after.members().owner().orElse("unknown")
-                    + " (was " + before.members().owner().orElse("unknown") + ")");
+            what.add("owner is now " + Embeds.name(after.members().owner().orElse("unknown"))
+                    + " (was " + Embeds.name(before.members().owner().orElse("unknown")) + ")");
         }
         if (change.changed(ChangeSet.Aspect.NATION)) {
             what.add(nationMove(before, after));
@@ -138,12 +138,12 @@ public final class ChangeReport {
         String was = before.nation().map(n -> n.name()).orElse(null);
         String now = after.nation().map(n -> n.name()).orElse(null);
         if (was == null) {
-            return "joined **" + now + "**";
+            return "joined **" + Embeds.name(now) + "**";
         }
         if (now == null) {
-            return "left **" + was + "**";
+            return "left **" + Embeds.name(was) + "**";
         }
-        return "moved from **" + was + "** to **" + now + "**";
+        return "moved from **" + Embeds.name(was) + "** to **" + Embeds.name(now) + "**";
     }
 
     /**
@@ -163,8 +163,8 @@ public final class ChangeReport {
     /** Owner and nation, when the map states them, for a claim being announced or mourned. */
     private static String context(Claim claim) {
         StringBuilder text = new StringBuilder();
-        claim.members().owner().ifPresent(owner -> text.append(" · ").append(owner));
-        claim.nation().ifPresent(nation -> text.append(" · ").append(nation.name()));
+        claim.members().owner().ifPresent(owner -> text.append(" · ").append(Embeds.name(owner)));
+        claim.nation().ifPresent(nation -> text.append(" · ").append(Embeds.name(nation.name())));
         text.append(" · ").append(Embeds.count(claim.chunkCount())).append(" chunks");
         return text.toString();
     }

@@ -234,9 +234,10 @@ public final class TopCommand implements SlashCommand {
         StringBuilder text = new StringBuilder();
         int rank = 1;
         for (Entry entry : top) {
-            text.append(medal(rank++)).append(" **").append(entry.name()).append("**");
+            text.append(medal(rank++)).append(" **").append(Embeds.name(entry.name())).append("**");
             if (!nations) {
-                entry.anchor().members().owner().ifPresent(owner -> text.append(" (").append(owner).append(')'));
+                entry.anchor().members().owner()
+                        .ifPresent(owner -> text.append(" (").append(Embeds.name(owner)).append(')'));
             }
             text.append('\n').append("└ ").append(stat(entry, metric, nations, totalChunks)).append('\n');
         }

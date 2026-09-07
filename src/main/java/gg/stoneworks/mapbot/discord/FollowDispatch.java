@@ -163,7 +163,7 @@ public final class FollowDispatch {
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("A follow has stopped working")
                 .setColor(Embeds.BAD)
-                .setDescription("`" + follow.id() + "` was watching " + Follows.describe(follow.target())
+                .setDescription("`" + follow.id() + "` was watching " + Follows.inText(follow.target())
                         + ", and has not found it for " + Embeds.count(follow.missedCycles())
                         + " cycles. It was probably deleted or renamed beyond recognition."
                         + "\n\nRemove it with `/follow remove " + follow.id() + "`.");

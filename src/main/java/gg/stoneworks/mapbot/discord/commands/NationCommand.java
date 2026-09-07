@@ -88,7 +88,7 @@ public final class NationCommand implements SlashCommand {
 
         List<Claim> lands = landsOf(snapshot, wanted);
         if (lands.isEmpty()) {
-            Replies.problem(event, "No nation called **" + wanted + "** holds any land.");
+            Replies.problem(event, "No nation called **" + Embeds.name(wanted) + "** holds any land.");
             return;
         }
 
@@ -107,7 +107,8 @@ public final class NationCommand implements SlashCommand {
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("\uD83C\uDFF3\uFE0F " + nation.name())
                 .setColor(affordable ? Embeds.GOOD : Embeds.BAD);
-        Embeds.field(embed, "Capital", nation.capital().isBlank() ? "Unknown" : nation.capital(), true);
+        Embeds.field(embed, "Capital",
+                nation.capital().isBlank() ? "Unknown" : Embeds.name(nation.capital()), true);
         Embeds.field(embed, "Lands", Embeds.count(lands.size()), true);
         Embeds.field(embed, "Members", Embeds.count(nation.playerCount()), true);
         Embeds.field(embed, "Total chunks", Embeds.count(totalChunks), true);
@@ -177,7 +178,7 @@ public final class NationCommand implements SlashCommand {
         List<Claim> lands = landsOf(snapshot, wanted);
         if (lands.isEmpty()) {
             // A nation can be renamed or disbanded while its embed stays in the channel.
-            Replies.problem(event, "**" + wanted + "** no longer holds any land.");
+            Replies.problem(event, "**" + Embeds.name(wanted) + "** no longer holds any land.");
             return;
         }
 
@@ -216,11 +217,11 @@ public final class NationCommand implements SlashCommand {
         }
         Claim seat = capital.get();
         if (seat.balance() >= owed) {
-            return "\u2705 " + seat.name() + " holds " + Upkeep.money(seat.balance())
+            return "\u2705 " + Embeds.name(seat.name()) + " holds " + Upkeep.money(seat.balance())
                     + ", enough for upkeep (runway "
                     + Upkeep.runwayPhrase(Upkeep.runwayCycles(seat.balance(), owed)) + ")";
         }
-        return "\u274C " + seat.name() + " holds " + Upkeep.money(seat.balance())
+        return "\u274C " + Embeds.name(seat.name()) + " holds " + Upkeep.money(seat.balance())
                 + ", short by " + Upkeep.money(owed - seat.balance());
     }
 
