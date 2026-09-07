@@ -2,13 +2,18 @@
 
 ## What this bot can and cannot do
 
-It reads one public HTTP endpoint, the squaremap marker feed any browser can open, and talks to
-Discord. It has **no connection to the Minecraft server**: no protocol client, no proxy account, no
-plugin channel, no RCON, no database credentials.
+It reads HTTP endpoints and talks to Discord. Nothing more: **no Minecraft protocol client, no
+proxy account, no plugin channel, no RCON, no database credentials.** It cannot join the server, act
+as a player, or read anything a server admin has not chosen to publish.
+
+The endpoints it reads are the squaremap marker feed any browser can open, and the LiteBans web
+panel. `/markets`, when it lands, will read a ChestShop API served by the game server, which is the
+first endpoint here that is not the public map. It stays an HTTP read like the others.
 
 That is enforced, not just promised. Every socket in the application lives in
 `gg.stoneworks.mapbot.net`, a test fails the build if anything outside that package reaches for the
-network, and the package's own README lists every host the bot may contact. See
+network, and the package's own README lists every host the bot may contact. Adding one means editing
+that table in the same commit, so the list cannot quietly grow. See
 [`net/README.md`](src/main/java/gg/stoneworks/mapbot/net/README.md).
 
 ## Secrets
@@ -29,14 +34,14 @@ Rules:
 
 ## Being a good citizen of the map
 
-Three commitments to the map operator, not implementation details. The bot fetches the marker feed
+Three deliberate choices, not implementation details. The bot fetches the marker feed
 once per cycle for the whole process, regardless of how many guilds or bot users are running. It
 fetches conditionally, sending `If-None-Match` so an unchanged payload costs a 304 instead of about
 seven megabytes. And it identifies itself honestly in its User-Agent rather than impersonating a
 browser.
 
-Changing any of the three is a conversation with staff first.
+Changing any of the three is a decision to take deliberately, not a tuning knob.
 
 ## Reporting something
 
-Raise it privately with Stoneworks staff or the bot operator rather than opening a public issue.
+Raise it privately with the bot operator rather than opening a public issue.

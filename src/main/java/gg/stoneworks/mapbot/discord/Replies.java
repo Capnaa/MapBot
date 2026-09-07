@@ -1,6 +1,8 @@
 package gg.stoneworks.mapbot.discord;
 
 import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Answers that only the person who asked should see.
@@ -14,7 +16,27 @@ import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
  */
 public final class Replies {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Replies.class);
+
     private Replies() {
+    }
+
+    /**
+     * Acknowledges an interaction before doing anything slow.
+     *
+     * <p>Discord gives three seconds and then discards the interaction, and it can be gone before
+     * the acknowledgement lands: the first one after a restart pays for a connection nobody has
+     * opened yet, and a pause anywhere in the process spends the window without any code running.
+     *
+     * <p>Losing that race is not a fault worth a stack trace. There is nothing to recover, nobody
+     * to tell (the interaction that would carry the message is the thing that expired), and the
+     * user sees Discord's own "interaction failed" and runs it again. So it is noted and dropped,
+     * rather than left to JDA's default handler, which reports it as an error with thirty lines of
+     * frames that say nothing about what happened.
+     */
+    public static void defer(IReplyCallback event, String command) {
+        event.deferReply().queue(null, error ->
+                LOG.warn("Could not acknowledge /{} in time; it was not answered", command));
     }
 
     /**

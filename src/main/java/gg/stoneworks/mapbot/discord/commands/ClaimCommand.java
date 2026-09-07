@@ -99,7 +99,7 @@ public final class ClaimCommand implements SlashCommand {
 
         // Only now is there slow work to do: rendering takes longer than Discord's three second
         // window, so the interaction has to be acknowledged before it starts.
-        event.deferReply().queue();
+        Replies.defer(event, name());
         Claim claim = found.get();
         boolean isCapital = claim.nation()
                 .map(n -> n.capital().equalsIgnoreCase(claim.name()))

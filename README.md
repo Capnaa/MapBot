@@ -1,10 +1,13 @@
 # MapBot
 
-The sanctioned, read-only Discord client for the Stoneworks public web map.
+A read-only Discord client for the Stoneworks public web map.
 
 It reads the squaremap marker feed for the Abex world, turns it into a queryable model of Lands
-claims, and answers questions about it in Discord with rendered map images. It never connects to the
-game server. That claim is enforced by a build-failing test rather than asserted; see
+claims, and answers questions about it in Discord with rendered map images.
+
+Every socket in the application lives in one package, `gg.stoneworks.mapbot.net`, and a test fails
+the build if anything outside it reaches for the network. That package's README lists every host the
+bot may contact, and adding one means editing that table in the same commit. See
 [SECURITY.md](SECURITY.md) and
 [`net/README.md`](src/main/java/gg/stoneworks/mapbot/net/README.md).
 
@@ -21,8 +24,7 @@ Two Discord bot users run inside one process and share everything behind them:
 Shared, constructed once: configuration, runtime settings, the map poller and its fetch cycle, the
 claim snapshot cache, the render cache, and all stores. In particular there is **one poll per cycle
 for the whole process**, not one per bot, and it is conditional: the feed is around seven megabytes,
-so `If-None-Match` keeps an unchanged cycle down to a 304. Both are commitments to the map operator,
-not tuning knobs.
+so `If-None-Match` keeps an unchanged cycle down to a 304. Both are deliberate, not tuning knobs.
 
 ## Commands
 
@@ -32,13 +34,14 @@ not tuning knobs.
 | `/nation` | A nation's figures, upkeep and map, with its land table behind a button |
 | `/player` | What a player owns and belongs to, coloured by role on the map |
 | `/top` | Leaderboards: claims or nations by wealth, land, members or claim count |
-| `/banhistory`, `/isbanned` | LiteBans panel lookups, sanctioned by staff |
+| `/banhistory`, `/isbanned` | LiteBans panel lookups |
 | `/follow`, `/followinfo` | Claim changes posted to a channel. Manage Server only |
 | `/about`, `/help`, `/feedback` | What the bot is, what it can do, how to report a problem |
 | `/adminpanel` | Admin bot only: toggles, health, and the follows browser |
 
-`/claimableland` and the market commands are deliberately not on this list. Markets stays a shell
-command for now, by agreement with staff.
+`/claimableland` is deliberately not on this list. `/markets` is a shell for now: unlike everything
+above, it will read a ChestShop API on the game server rather than the public web map, so it is the
+first thing here to talk to anything but the map and Discord.
 
 ### Follows
 
@@ -120,6 +123,6 @@ ephemeral.
 
 ## Licence
 
-Intentionally none yet. This repository is private and shared with Stoneworks staff; adding a
-licence is a decision to make deliberately, before anything is published or anyone outside the
-project contributes, because relicensing later needs every copyright holder to agree.
+Intentionally none yet. This repository is private; adding a licence is a decision to make
+deliberately, before anything is published or anyone outside the project contributes, because
+relicensing later needs every copyright holder to agree.

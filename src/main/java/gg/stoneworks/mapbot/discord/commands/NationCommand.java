@@ -92,7 +92,7 @@ public final class NationCommand implements SlashCommand {
             return;
         }
 
-        event.deferReply().queue();
+        Replies.defer(event, name());
 
         // Every land of a nation carries the same nation block, so any of them will do.
         var nation = lands.get(0).nation().orElseThrow();

@@ -116,7 +116,7 @@ public final class TopCommand implements SlashCommand {
             return;
         }
 
-        event.deferReply().queue();
+        Replies.defer(event, name());
 
         long totalChunks = snapshot.stream().mapToLong(Claim::chunkCount).sum();
         EmbedBuilder embed = new EmbedBuilder()

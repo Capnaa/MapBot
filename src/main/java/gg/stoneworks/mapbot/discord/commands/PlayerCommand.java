@@ -113,7 +113,7 @@ public final class PlayerCommand implements SlashCommand {
             return;
         }
 
-        event.deferReply().queue();
+        Replies.defer(event, name());
 
         // The map's own spelling, so the reply and the skin match the account rather than the typing.
         String player = spellingOf(wanted, owned, memberOf);

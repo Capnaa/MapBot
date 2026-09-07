@@ -48,7 +48,7 @@ public final class BanHistoryCommand implements SlashCommand {
     @Override
     public void handle(SlashCommandInteractionEvent event) throws Exception {
         String wanted = event.getOption("player").getAsString().trim();
-        event.deferReply().queue();
+        Replies.defer(event, name());
 
         Optional<BanLookup.Record> record;
         try {
