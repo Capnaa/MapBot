@@ -1,11 +1,11 @@
 package gg.stoneworks.mapbot.net;
 
+import gg.stoneworks.mapbot.store.AtomicFiles;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,9 +39,8 @@ public final class MarkerCache {
     /**
      * Replaces the cached payload atomically.
      *
-     * <p>Written to a sibling temp file and moved into place, so a crash mid-write leaves the
-     * previous payload intact rather than a truncated file that would later be served as real data.
-     * Falls back to a non-atomic replace only where the platform refuses an atomic move.
+     * <p>Atomic, so a crash mid-write leaves the previous payload intact rather than a truncated
+     * file that would later be served as real data.
      *
      * <p>Callers must pass only a payload already sniffed as JSON. Caching an offline page would
      * poison the fallback for every later outage.
@@ -51,20 +50,7 @@ public final class MarkerCache {
      */
     public void store(String json) throws IOException {
         Objects.requireNonNull(json, "json");
-        Path temp = Files.createTempFile(file.toAbsolutePath().getParent(), "markers", ".tmp");
-        try {
-            Files.writeString(temp, json, StandardCharsets.UTF_8);
-            try {
-                Files.move(temp, file,
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            // Only fires if the move failed; a successful move consumed the temp file.
-            Files.deleteIfExists(temp);
-        }
+        AtomicFiles.writeString(file, json);
     }
 
     /**
