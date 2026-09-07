@@ -34,6 +34,25 @@ public final class Cropper {
      *         place anything else on it
      */
     public static Cropped crop(BufferedImage image, Rectangle region) {
+        Rectangle actual = regionFor(image.getWidth(), image.getHeight(), region);
+        BufferedImage cut = new BufferedImage(actual.width, actual.height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = cut.createGraphics();
+        try {
+            graphics.drawImage(image, 0, 0, actual.width, actual.height,
+                    actual.x, actual.y, actual.x + actual.width, actual.y + actual.height, null);
+        } finally {
+            graphics.dispose();
+        }
+        return new Cropped(cut, actual);
+    }
+
+    /**
+     * The rectangle a crop would use, without doing the crop.
+     *
+     * <p>Separated so a renderer can draw straight into the region rather than producing a whole
+     * map and discarding most of it.
+     */
+    public static Rectangle regionFor(int imageWidth, int imageHeight, Rectangle region) {
         int marginX = Math.max(MIN_MARGIN, (int) Math.round(region.width * MARGIN_FRACTION));
         int marginY = Math.max(MIN_MARGIN, (int) Math.round(region.height * MARGIN_FRACTION));
 
@@ -45,20 +64,12 @@ public final class Cropper {
         int x = region.x + region.width / 2 - width / 2;
         int y = region.y + region.height / 2 - height / 2;
 
-        width = Math.min(width, image.getWidth());
-        height = Math.min(height, image.getHeight());
-        x = Math.max(0, Math.min(x, image.getWidth() - width));
-        y = Math.max(0, Math.min(y, image.getHeight() - height));
+        width = Math.min(width, imageWidth);
+        height = Math.min(height, imageHeight);
+        x = Math.max(0, Math.min(x, imageWidth - width));
+        y = Math.max(0, Math.min(y, imageHeight - height));
 
-        Rectangle actual = new Rectangle(x, y, width, height);
-        BufferedImage cut = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics = cut.createGraphics();
-        try {
-            graphics.drawImage(image, 0, 0, width, height, x, y, x + width, y + height, null);
-        } finally {
-            graphics.dispose();
-        }
-        return new Cropped(cut, actual);
+        return new Rectangle(x, y, width, height);
     }
 
     /**

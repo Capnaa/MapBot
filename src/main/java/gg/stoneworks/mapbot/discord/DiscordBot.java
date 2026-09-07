@@ -4,10 +4,13 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -19,9 +22,10 @@ import java.util.Optional;
  * lives only in the main Stoneworks guild. They are separate Discord applications with separate
  * tokens, sharing everything behind them.
  *
- * <p>No privileged intents are requested. The bot reads a public web map and answers slash
- * commands, so it has no business asking for message content or member lists, and asking would
- * invite a reasonable question about why.
+ * <p>No intents and no caches. The bot reads a public web map and answers slash commands, so it
+ * has no business holding member lists or message history, and asking for them would invite a
+ * reasonable question about why. It also keeps the footprint down: caching guilds and members for
+ * a bot in sixty servers costs memory for data nothing ever reads.
  */
 public final class DiscordBot implements AutoCloseable {
 
@@ -48,7 +52,12 @@ public final class DiscordBot implements AutoCloseable {
     public static DiscordBot connect(String name, String token, CommandRegistry registry,
                                      BotListener listener) throws InterruptedException {
         Objects.requireNonNull(token, "token");
-        JDA jda = JDABuilder.createLight(token, List.of(GatewayIntent.GUILD_MESSAGES))
+        // No intents at all. Slash commands arrive as interactions, which need none, and asking
+        // for GUILD_MESSAGES would have Discord stream every message in every server to a bot that
+        // never reads one.
+        JDA jda = JDABuilder.createLight(token, Collections.emptyList())
+                .setMemberCachePolicy(MemberCachePolicy.NONE)
+                .disableCache(EnumSet.allOf(CacheFlag.class))
                 .setActivity(Activity.watching("the map"))
                 .addEventListeners(listener)
                 .build()

@@ -23,6 +23,8 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.utils.FileUpload;
 
 import javax.imageio.ImageIO;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Optional;
@@ -192,12 +194,14 @@ public final class ClaimCommand implements SlashCommand {
         }
         layers.add(StyledClaim.own(subject));
 
+        // Work out the crop first, then render only that. Rendering the whole map and cropping
+        // afterwards would allocate the full 2048 square on every lookup to keep a corner of it.
         Projection projection = new Projection(base.calibration());
-        Cropper.Cropped cropped = Cropper.crop(
-                ClaimOverlayRenderer.render(base, layers), projection.pixelBounds(bounds));
+        Rectangle region = Cropper.regionFor(base.width(), base.height(), projection.pixelBounds(bounds));
+        BufferedImage picture = ClaimOverlayRenderer.render(base, layers, region);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(cropped.image(), "png", out);
+        ImageIO.write(picture, "png", out);
         return out.toByteArray();
     }
 }
