@@ -58,7 +58,6 @@ public final class StabilityGate {
             // definition, and could easily land mid-restart, so it costs one cycle.
             lastSeenCount = claimCount;
             consecutiveHolds++;
-            LOG.info("Holding first snapshot ({} claims) until a second fetch confirms it", claimCount);
             return Verdict.HOLD;
         }
 
@@ -79,7 +78,7 @@ public final class StabilityGate {
             consecutiveHolds = 0;
             return Verdict.FORCED;
         }
-        LOG.info("Claim count moved {} to {}, beyond tolerance {}; holding", previous, claimCount, tolerance);
+        LOG.debug("Claim count moved {} to {}, beyond tolerance {}; holding", previous, claimCount, tolerance);
         return Verdict.HOLD;
     }
 
@@ -93,13 +92,14 @@ public final class StabilityGate {
      *
      * <p>Ignored once anything has been seen. A count from disk must never displace one observed
      * this run.
+     *
+     * <p>Silent. The caller loading that cache says so, and saying it twice helps nobody.
      */
     public void seed(int claimCount) {
         if (lastSeenCount != null) {
             return;
         }
         lastSeenCount = claimCount;
-        LOG.info("Seeded with {} claims from cache", claimCount);
     }
 
     /** Forgets what it has seen, so the next fetch is treated as a first fetch. */

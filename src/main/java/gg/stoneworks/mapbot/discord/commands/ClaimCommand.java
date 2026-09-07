@@ -14,6 +14,7 @@ import gg.stoneworks.mapbot.render.BaseMapImage;
 import gg.stoneworks.mapbot.render.ClaimOverlayRenderer;
 import gg.stoneworks.mapbot.render.ClaimOverlayRenderer.StyledClaim;
 import gg.stoneworks.mapbot.render.Cropper;
+import gg.stoneworks.mapbot.render.Picture;
 import gg.stoneworks.mapbot.render.Projection;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -22,10 +23,8 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.utils.FileUpload;
 
-import javax.imageio.ImageIO;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -154,11 +153,10 @@ public final class ClaimCommand implements SlashCommand {
             return;
         }
 
-        byte[] png = render(base.get(), snapshot, claim);
-        String file = "claim_" + SafeFileName.of(claim.name()) + ".png";
+        Picture picture = render(base.get(), snapshot, claim);
         event.getHook()
-                .sendMessageEmbeds(embed.setImage("attachment://" + file).build())
-                .addFiles(FileUpload.fromData(png, file))
+                .sendMessageEmbeds(embed.setImage(picture.attachment()).build())
+                .addFiles(FileUpload.fromData(picture.bytes(), picture.fileName()))
                 .queue();
     }
 
@@ -187,7 +185,7 @@ public final class ClaimCommand implements SlashCommand {
      * <p>Only claims near the subject are drawn as context. Drawing all 2400 costs seconds for
      * pixels that are cropped away moments later.
      */
-    private static byte[] render(BaseMapImage base, List<Claim> all, Claim subject) throws Exception {
+    private static Picture render(BaseMapImage base, List<Claim> all, Claim subject) {
         Bbox bounds = ClaimGeometry.worldBbox(subject).orElseThrow();
         Bbox nearby = new Bbox(bounds.minX() - 2000, bounds.minZ() - 2000,
                 bounds.maxX() + 2000, bounds.maxZ() + 2000);
@@ -207,10 +205,7 @@ public final class ClaimCommand implements SlashCommand {
         // afterwards would allocate the full 2048 square on every lookup to keep a corner of it.
         Projection projection = new Projection(base.calibration());
         Rectangle region = Cropper.regionFor(base.width(), base.height(), projection.pixelBounds(bounds));
-        BufferedImage picture = ClaimOverlayRenderer.render(base, layers, region, DETAIL);
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(picture, "png", out);
-        return out.toByteArray();
+        BufferedImage image = ClaimOverlayRenderer.render(base, layers, region, DETAIL);
+        return Picture.of("claim_" + SafeFileName.of(subject.name()), image, DETAIL);
     }
 }

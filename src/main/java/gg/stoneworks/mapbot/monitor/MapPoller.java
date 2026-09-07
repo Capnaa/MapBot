@@ -28,6 +28,10 @@ import java.util.Objects;
  * awkward sequences testable: a restart returning claims a few at a time, a 304 mid-sequence, a
  * truncated payload as the very first fetch after startup.
  *
+ * <p>Outcomes are returned, not announced. Every case here has a caller that logs it, and a class
+ * that both reports and logs says everything twice. What stays is what the outcome cannot carry: a
+ * guard being overruled, a cache that could not be written.
+ *
  * <p>Not thread-safe, and deliberately so. It holds the ETag, the baseline and the gate's state,
  * and interleaving two cycles would corrupt all three.
  */
@@ -55,6 +59,7 @@ public final class MapPoller {
     private boolean stale;
     private boolean baselineEstablished;
     private int consecutiveRejections;
+    private long version;
 
     public MapPoller(MarkersSource source,
                      MarkerCache cache,
@@ -115,10 +120,8 @@ public final class MapPoller {
         } catch (MapOfflineException e) {
             // Expected and routine. Commands keep answering from the last good snapshot.
             stale = true;
-            LOG.info("Map is offline; serving the previous snapshot as stale");
             return new PollOutcome.Offline();
         } catch (IOException e) {
-            LOG.warn("Fetch failed: {}", e.toString());
             return new PollOutcome.Failed(e.toString());
         }
 
@@ -134,7 +137,6 @@ public final class MapPoller {
         try {
             claims = SquaremapLayerReader.readClaims(changed.json());
         } catch (MalformedMarkersException e) {
-            LOG.warn("Unusable payload: {}", e.getMessage());
             return new PollOutcome.Failed(e.getMessage());
         }
 
@@ -154,7 +156,6 @@ public final class MapPoller {
             // before being overruled anyway.
             publish(claims, changed.etag(), changed.json());
             baselineEstablished = true;
-            LOG.info("Baseline set at {} claims; reporting starts from the next cycle", claims.size());
             return new PollOutcome.Accepted(ChangeSet.nothingChanged(claims), claims.size(), true);
         }
 
@@ -164,9 +165,6 @@ public final class MapPoller {
             if (consecutiveRejections < MAX_CONSECUTIVE_REJECTIONS) {
                 // Same reasoning as the gate: no ETag update, so the next cycle sees the payload
                 // afresh rather than being told nothing changed.
-                LOG.warn("Suspected partial payload: churn {}, claim count {} to {}; keeping the "
-                                + "previous snapshot and skipping the report",
-                        changes.churn(), current.size(), claims.size());
                 return new PollOutcome.Rejected(changes.churn(), current.size(), claims.size());
             }
             LOG.warn("Churn of {} has persisted for {} cycles ({} claims to {}); treating it as a "
@@ -180,7 +178,20 @@ public final class MapPoller {
         return new PollOutcome.Accepted(changes, claims.size(), false);
     }
 
+    /**
+     * Which snapshot {@link #claims()} is currently serving.
+     *
+     * <p>Advances on every accepted cycle and never repeats, so anything derived from a snapshot,
+     * a render in particular, can tell whether what it holds still describes the map. Starts at
+     * zero and stays there until the first cycle is accepted, seeding included, since a cache load
+     * is not a new state of the world.
+     */
+    public long snapshotVersion() {
+        return version;
+    }
+
     private void publish(List<Claim> claims, String newEtag, String json) {
+        version++;
         current = claims;
         stale = false;
         etag = newEtag;

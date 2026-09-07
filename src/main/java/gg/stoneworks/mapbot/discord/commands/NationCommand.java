@@ -14,6 +14,7 @@ import gg.stoneworks.mapbot.render.BaseMapImage;
 import gg.stoneworks.mapbot.render.ClaimOverlayRenderer;
 import gg.stoneworks.mapbot.render.ClaimOverlayRenderer.StyledClaim;
 import gg.stoneworks.mapbot.render.Cropper;
+import gg.stoneworks.mapbot.render.Picture;
 import gg.stoneworks.mapbot.render.Projection;
 import gg.stoneworks.mapbot.store.SafeFileName;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -27,10 +28,8 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.FileUpload;
 
-import javax.imageio.ImageIO;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -140,11 +139,10 @@ public final class NationCommand implements SlashCommand {
             return;
         }
 
-        byte[] png = render(base.get(), snapshot, lands);
-        String file = "nation_" + SafeFileName.of(nation.name()) + ".png";
+        Picture picture = render(base.get(), snapshot, lands, nation.name());
         var reply = event.getHook()
-                .sendMessageEmbeds(embed.setImage("attachment://" + file).build())
-                .addFiles(FileUpload.fromData(png, file));
+                .sendMessageEmbeds(embed.setImage(picture.attachment()).build())
+                .addFiles(FileUpload.fromData(picture.bytes(), picture.fileName()));
         landsButton.ifPresent(reply::setActionRow);
         reply.queue();
     }
@@ -227,7 +225,7 @@ public final class NationCommand implements SlashCommand {
     }
 
     /** The nation's lands in their own colours, with everyone else faint underneath for context. */
-    private static byte[] render(BaseMapImage base, List<Claim> all, List<Claim> lands) throws Exception {
+    private static Picture render(BaseMapImage base, List<Claim> all, List<Claim> lands, String nationName) {
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
         for (Claim land : lands) {
@@ -255,10 +253,7 @@ public final class NationCommand implements SlashCommand {
         Projection projection = new Projection(base.calibration());
         Rectangle region = Cropper.regionFor(base.width(), base.height(), projection.pixelBounds(territory));
         int detail = ClaimOverlayRenderer.detailFactorFor(region, TARGET_PIXELS);
-        BufferedImage picture = ClaimOverlayRenderer.render(base, layers, region, detail);
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(picture, "png", out);
-        return out.toByteArray();
+        BufferedImage image = ClaimOverlayRenderer.render(base, layers, region, detail);
+        return Picture.of("nation_" + SafeFileName.of(nationName), image, detail);
     }
 }

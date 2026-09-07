@@ -8,7 +8,11 @@ import gg.stoneworks.mapbot.discord.CommandRegistry;
 import gg.stoneworks.mapbot.discord.DiscordBot;
 import gg.stoneworks.mapbot.discord.commands.AboutCommand;
 import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
+import gg.stoneworks.mapbot.discord.commands.NationCommand;
+import gg.stoneworks.mapbot.discord.commands.TopCommand;
+import gg.stoneworks.mapbot.discord.MapLink;
 import gg.stoneworks.mapbot.render.BaseMapImage;
+import gg.stoneworks.mapbot.render.RenderCache;
 import gg.stoneworks.mapbot.diff.ChangeSet;
 import gg.stoneworks.mapbot.diff.ChurnGuard;
 import gg.stoneworks.mapbot.geometry.Bbox;
@@ -61,6 +65,9 @@ public final class Application implements AutoCloseable {
     private final DailySchedule baseMapSchedule;
     private final Tokens tokens;
 
+    /** Shared, because a leaderboard is the same picture for everyone who asks for it. */
+    private final RenderCache renders = RenderCache.withDefaults();
+
     /** Replaced wholesale after a rebuild, so a render always uses one image and its own calibration. */
     private volatile Optional<BaseMapImage> baseMap = Optional.empty();
 
@@ -68,6 +75,9 @@ public final class Application implements AutoCloseable {
     private volatile NameIndex claimNames = NameIndex.empty();
     private volatile NameIndex nationNames = NameIndex.empty();
     private DiscordBot publicBot;
+
+    /** Held so the poll cycle can pre-render the leaderboards people use. */
+    private TopCommand topCommand;
 
     public Application(BotConfig config, Tokens tokens) {
         this.config = config;
@@ -120,11 +130,13 @@ public final class Application implements AutoCloseable {
         CommandRegistry registry = new CommandRegistry(settings)
                 .add(new AboutCommand(config.map().markersUrl().toString()))
                 .add(new ClaimCommand(poller::claims, () -> baseMap,
-                        gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl()),
+                        MapLink.from(config.map().markersUrl()),
                         () -> claimNames))
-                .add(new gg.stoneworks.mapbot.discord.commands.NationCommand(poller::claims, () -> baseMap,
-                        gg.stoneworks.mapbot.discord.MapLink.from(config.map().markersUrl()),
-                        () -> nationNames));
+                .add(new NationCommand(poller::claims, () -> baseMap,
+                        MapLink.from(config.map().markersUrl()),
+                        () -> nationNames))
+                .add(topCommand = new TopCommand(poller::claims, () -> baseMap,
+                        poller::snapshotVersion, renders));
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());
@@ -159,6 +171,7 @@ public final class Application implements AutoCloseable {
         }
 
         rebuildNameIndexes();
+        warmLeaderboards();
 
         if (accepted.baseline() || !settings.isEnabled(Feature.FOLLOWS)) {
             return;
@@ -172,6 +185,24 @@ public final class Application implements AutoCloseable {
         } catch (IOException e) {
             // Losing this cycle's follow updates is bad; stopping the poll loop is worse.
             LOG.error("Follow cycle failed", e);
+        }
+    }
+
+    /**
+     * Redraws the leaderboards this server uses, on the poll thread rather than in a command.
+     *
+     * <p>Runs here because the picture is the same for everyone until the next snapshot, so drawing
+     * it once a minute costs less than drawing it once per person and nobody waits on it.
+     */
+    private void warmLeaderboards() {
+        if (topCommand == null) {
+            return;
+        }
+        try {
+            topCommand.warm();
+        } catch (RuntimeException e) {
+            // A leaderboard nobody has asked for yet is not worth stopping the poll loop over.
+            LOG.warn("Could not pre-render leaderboards", e);
         }
     }
 

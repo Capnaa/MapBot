@@ -1,8 +1,13 @@
 package gg.stoneworks.mapbot.render;
 
+import gg.stoneworks.mapbot.geometry.ClaimGeometry;
 import gg.stoneworks.mapbot.model.Claim;
+import gg.stoneworks.mapbot.model.Point;
 
 import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -74,6 +79,19 @@ public final class ClaimOverlayRenderer {
      */
     public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims,
                                        Rectangle region, int factor) {
+        return render(base, claims, List.of(), region, factor);
+    }
+
+    /**
+     * Draws claims and labels them.
+     *
+     * <p>Badges are drawn last, over every claim, so a number is never hidden under a neighbour
+     * that happened to come later in the list.
+     *
+     * @param badges markers to place, each on its own claim
+     */
+    public static BufferedImage render(BaseMapImage base, List<StyledClaim> claims, List<Badge> badges,
+                                       Rectangle region, int factor) {
         Objects.requireNonNull(base, "base");
         if (factor < 1) {
             throw new IllegalArgumentException("factor must be at least 1: " + factor);
@@ -109,6 +127,13 @@ public final class ClaimOverlayRenderer {
                 graphics.setStroke(new BasicStroke(styled.style().stroke() / factor));
                 graphics.draw(shape);
             }
+
+            // Undo the scale so a badge is sized in finished pixels. A label exists to be read at
+            // the size Discord shows the image, and has no reason to grow with the detail factor.
+            graphics.scale(1.0 / factor, 1.0 / factor);
+            for (Badge badge : badges) {
+                drawBadge(graphics, projection, badge, x, y, factor, width * factor, height * factor);
+            }
         } finally {
             graphics.dispose();
         }
@@ -135,6 +160,70 @@ public final class ClaimOverlayRenderer {
 
     /** Past this the terrain is visibly enlarged pixels and the bytes buy nothing. */
     private static final int MAX_DETAIL = 4;
+
+    /**
+     * Draws one badge centred on its claim.
+     *
+     * <p>A dark pill behind light text, rather than outlined text alone. The base map is desaturated
+     * but not uniform, and a label with no backing disappears over pale terrain exactly where a
+     * large claim is most likely to sit.
+     */
+    private static void drawBadge(Graphics2D graphics, Projection projection, Badge badge,
+                                  int originX, int originY, int factor,
+                                  int canvasWidth, int canvasHeight) {
+        Point anchor = ClaimGeometry.anchor(badge.claim()).orElse(null);
+        if (anchor == null) {
+            return;
+        }
+        graphics.setFont(BADGE_FONT);
+        FontMetrics metrics = graphics.getFontMetrics();
+        int textWidth = metrics.stringWidth(badge.text());
+        int width = Math.max(textWidth + BADGE_PADDING * 2, BADGE_HEIGHT);
+
+        // Nudged inside the canvas rather than left half drawn. A claim on the world border puts
+        // its own centre near the edge, and half a number is not a number.
+        int centreX = clamp((int) Math.round((projection.x(anchor.x()) - originX) * factor),
+                width / 2 + 1, canvasWidth - width / 2 - 1);
+        int centreY = clamp((int) Math.round((projection.y(anchor.z()) - originY) * factor),
+                BADGE_HEIGHT / 2 + 1, canvasHeight - BADGE_HEIGHT / 2 - 1);
+
+        graphics.setColor(BADGE_FILL);
+        graphics.fillRoundRect(centreX - width / 2, centreY - BADGE_HEIGHT / 2,
+                width, BADGE_HEIGHT, BADGE_HEIGHT, BADGE_HEIGHT);
+        graphics.setColor(BADGE_EDGE);
+        graphics.setStroke(new BasicStroke(2f));
+        graphics.drawRoundRect(centreX - width / 2, centreY - BADGE_HEIGHT / 2,
+                width, BADGE_HEIGHT, BADGE_HEIGHT, BADGE_HEIGHT);
+
+        graphics.setColor(BADGE_TEXT);
+        graphics.drawString(badge.text(), centreX - textWidth / 2,
+                centreY + (metrics.getAscent() - metrics.getDescent()) / 2);
+    }
+
+    private static int clamp(int value, int low, int high) {
+        return high < low ? value : Math.max(low, Math.min(high, value));
+    }
+
+    private static final Font BADGE_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 22);
+    private static final int BADGE_HEIGHT = 34;
+    private static final int BADGE_PADDING = 11;
+    private static final Color BADGE_FILL = new Color(0, 0, 0, 200);
+    private static final Color BADGE_EDGE = new Color(255, 255, 255, 220);
+    private static final Color BADGE_TEXT = Color.WHITE;
+
+    /**
+     * A label placed on a claim.
+     *
+     * @param claim what to centre it on
+     * @param text  what it says, kept to a few characters since it sits on top of the map
+     */
+    public record Badge(Claim claim, String text) {
+
+        public Badge {
+            Objects.requireNonNull(claim, "claim");
+            Objects.requireNonNull(text, "text");
+        }
+    }
 
     /** A claim and the way this particular picture wants it drawn. */
     public record StyledClaim(Claim claim, ClaimStyle style) {
