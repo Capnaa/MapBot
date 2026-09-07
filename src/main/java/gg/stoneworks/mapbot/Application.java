@@ -10,6 +10,8 @@ import gg.stoneworks.mapbot.discord.commands.AboutCommand;
 import gg.stoneworks.mapbot.discord.FollowDispatch;
 import gg.stoneworks.mapbot.discord.commands.ClaimCommand;
 import gg.stoneworks.mapbot.discord.commands.FollowCommand;
+import gg.stoneworks.mapbot.discord.commands.BanHistoryCommand;
+import gg.stoneworks.mapbot.discord.commands.IsBannedCommand;
 import gg.stoneworks.mapbot.discord.commands.PlayerCommand;
 import gg.stoneworks.mapbot.discord.commands.NationCommand;
 import gg.stoneworks.mapbot.discord.commands.TopCommand;
@@ -27,6 +29,8 @@ import gg.stoneworks.mapbot.monitor.FollowResolver;
 import gg.stoneworks.mapbot.monitor.MapPoller;
 import gg.stoneworks.mapbot.monitor.PollOutcome;
 import gg.stoneworks.mapbot.monitor.StabilityGate;
+import gg.stoneworks.mapbot.bans.BanLookup;
+import gg.stoneworks.mapbot.net.LiteBansClient;
 import gg.stoneworks.mapbot.net.MarkerCache;
 import gg.stoneworks.mapbot.net.MarkersClient;
 import gg.stoneworks.mapbot.net.TileClient;
@@ -117,6 +121,17 @@ public final class Application implements AutoCloseable {
                 config.baseMap().rebuildAt(), config.baseMap().zone());
     }
 
+    /**
+     * The ban panel, if one is configured.
+     *
+     * <p>Two attempts and short timeouts: this runs while someone waits on a Discord interaction,
+     * and retrying hard against someone else's panel turns one impatient user into sustained load.
+     */
+    private Optional<BanLookup> bans() {
+        return config.bans().panelBaseUrl().map(url -> new BanLookup(
+                new LiteBansClient(url, Duration.ofSeconds(10), Duration.ofSeconds(10), 2)));
+    }
+
     private static Settings startupDefaults(BotConfig config) {
         EnumSet<Feature> enabled = EnumSet.noneOf(Feature.class);
         if (config.features().follows()) enabled.add(Feature.FOLLOWS);
@@ -150,6 +165,11 @@ public final class Application implements AutoCloseable {
                 .add(new FollowCommand(follows, poller::claims, () -> claimNames, () -> nationNames))
                 .add(new PlayerCommand(poller::claims, () -> baseMap,
                         MapLink.from(config.map().markersUrl()), () -> playerNames));
+        // Only when a panel is configured. The toggle can switch the commands off, but nothing can
+        // switch on a lookup that has nowhere to look.
+        bans().ifPresent(lookup -> registry
+                .add(new IsBannedCommand(lookup))
+                .add(new BanHistoryCommand(lookup)));
         publicBot = DiscordBot.connect("public", tokens.publicBot(), registry,
                 new BotListener("public", registry, settings));
         publicBot.publishCommands(config.discord().devGuildId());

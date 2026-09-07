@@ -7,6 +7,8 @@
 discord.guild.id=YOUR_GUILD_ID
 # Channel the bot mirrors its console output to. Blank disables mirroring.
 discord.channel.console=
+# Where /feedback is delivered. Leave blank to run without the command.
+discord.channel.feedback=
 # Which bot owns the presence line: public or admin. Both setting it would fight.
 discord.presence.owner=public
 # Development only. When set, the public bot registers its commands to this guild instead of
@@ -22,9 +24,10 @@ api.tiles.url=https://map.stoneworks.gg/abex/tiles/minecraft_overworld/
 map.zoom.max=3
 
 ### Ban lookups ###
-# LiteBans panel URL. Must contain the literal {player}, replaced with the URL-encoded name.
+# Root of the LiteBans web panel, with a trailing slash. A lookup is two requests against it:
+# check.php turns a name into a UUID, history.php returns that UUID's punishments.
 # Leave blank to run without ban lookups.
-api.bans.url=
+api.bans.url=https://stoneworks.gg/bans/
 
 ### Paths ###
 paths.data.dir=data

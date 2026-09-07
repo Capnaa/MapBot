@@ -31,13 +31,15 @@ public record BotConfig(Discord discord,
      * @param guildId          the main Stoneworks guild, where the admin bot registers its commands
      * @param consoleChannelId where console output is mirrored, absent to mirror nowhere
      * @param presenceOwner    which of the two bots sets the status line, since both would fight
+     * @param feedbackChannelId where /feedback is delivered, absent to disable the command
      * @param devGuildId       when present, the public bot registers its commands there instead of
      *                         globally. Guild commands appear instantly where global ones can take
      *                         an hour, which is the difference between a usable development loop
      *                         and an unusable one. Unset in production.
      */
     public record Discord(String guildId, Optional<String> consoleChannelId,
-                          PresenceOwner presenceOwner, Optional<String> devGuildId) {
+                          PresenceOwner presenceOwner, Optional<String> devGuildId,
+                          Optional<String> feedbackChannelId) {
     }
 
     public enum PresenceOwner { PUBLIC, ADMIN }
@@ -53,10 +55,12 @@ public record BotConfig(Discord discord,
     }
 
     /**
-     * @param panelUrlTemplate LiteBans panel URL containing {@code {player}}, absent if ban lookups
-     *                         are not configured, which disables them regardless of the toggle
+     * @param panelBaseUrl root of the LiteBans panel, absent if ban lookups are not configured,
+     *                     which disables them regardless of the toggle. A lookup is two requests
+     *                     against this root, since the panel keys history by UUID and only
+     *                     {@code check.php} knows how to turn a name into one.
      */
-    public record Bans(Optional<String> panelUrlTemplate) {
+    public record Bans(Optional<String> panelBaseUrl) {
     }
 
     /**

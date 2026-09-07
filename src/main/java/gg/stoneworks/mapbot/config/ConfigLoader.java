@@ -56,7 +56,8 @@ public final class ConfigLoader {
                         required("discord.guild.id"),
                         optional("discord.channel.console"),
                         presenceOwner(),
-                        optional("discord.dev.guild.id")),
+                        optional("discord.dev.guild.id"),
+                        optional("discord.channel.feedback")),
                 new BotConfig.MapSource(
                         uri("api.markers.url"),
                         baseUrl("api.tiles.url"),
@@ -99,8 +100,8 @@ public final class ConfigLoader {
      */
     private Optional<String> banTemplate() {
         Optional<String> value = optional("api.bans.url");
-        if (value.isPresent() && !value.get().contains("{player}")) {
-            problems.add("api.bans.url must contain {player}: " + value.get());
+        if (value.isPresent() && !value.get().startsWith("http")) {
+            problems.add("api.bans.url must be an http or https panel root: " + value.get());
         }
         return value;
     }

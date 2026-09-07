@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,18 +68,31 @@ class ConfigLoaderTest {
     }
 
     @Test
-    void refusesABanUrlWithNoPlayerPlaceholder() throws Exception {
+    void refusesABanUrlThatIsNotAPanelRoot() throws Exception {
         // Silently disabling a command because a key has a typo is how a deployment ends up
         // mysteriously missing a feature.
         Properties broken = example();
-        broken.setProperty("api.bans.url", "https://bans.example/history");
+        broken.setProperty("api.bans.url", "bans.example/history");
 
         assertThrows(ConfigException.class, () -> ConfigLoader.from(broken));
     }
 
     @Test
     void banLookupsAreOptional() throws Exception {
-        assertTrue(ConfigLoader.from(example()).bans().panelUrlTemplate().isEmpty());
+        // A deployment without a panel runs without the commands rather than refusing to start.
+        Properties none = example();
+        none.setProperty("api.bans.url", "");
+
+        assertTrue(ConfigLoader.from(none).bans().panelBaseUrl().isEmpty());
+    }
+
+    @Test
+    void acceptsAPanelRoot() throws Exception {
+        Properties configured = example();
+        configured.setProperty("api.bans.url", "https://stoneworks.gg/bans/");
+
+        assertEquals(Optional.of("https://stoneworks.gg/bans/"),
+                ConfigLoader.from(configured).bans().panelBaseUrl());
     }
 
     @Test

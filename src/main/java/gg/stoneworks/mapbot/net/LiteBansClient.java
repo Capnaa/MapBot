@@ -30,35 +30,26 @@ import java.util.Objects;
  */
 public final class LiteBansClient {
 
-    private static final String PLAYER_PLACEHOLDER = "{player}";
-
-    private final String urlTemplate;
+    private final String base;
     private final String userAgent;
     private final Duration requestTimeout;
     private final HttpClient http;
     private final int maxAttempts;
 
     /**
-     * @param urlTemplate    panel URL containing the literal token {@code {player}}, replaced with
-     *                       the URL-encoded player name per lookup
+     * @param baseUrl        panel root, with or without a trailing slash
      * @param connectTimeout ceiling on connection establishment
      * @param requestTimeout ceiling on one attempt
      * @param maxAttempts    total attempts per lookup, including the first. Keep this low: a
      *                       user-triggered lookup that retries hard turns one impatient player into
      *                       sustained load on someone else's panel.
-     * @throws IllegalArgumentException if the template lacks {@code {player}}, which would return
-     *                                  the same page for every player
      */
-    public LiteBansClient(String urlTemplate,
+    public LiteBansClient(String baseUrl,
                           Duration connectTimeout,
                           Duration requestTimeout,
                           int maxAttempts) {
-        Objects.requireNonNull(urlTemplate, "urlTemplate");
-        if (!urlTemplate.contains(PLAYER_PLACEHOLDER)) {
-            throw new IllegalArgumentException(
-                    "LiteBans URL template must contain " + PLAYER_PLACEHOLDER + ": " + urlTemplate);
-        }
-        this.urlTemplate = urlTemplate;
+        Objects.requireNonNull(baseUrl, "baseUrl");
+        this.base = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         this.userAgent = Http.userAgent();
         this.requestTimeout = Objects.requireNonNull(requestTimeout, "requestTimeout");
         this.http = Http.client(Objects.requireNonNull(connectTimeout, "connectTimeout"));
@@ -66,7 +57,7 @@ public final class LiteBansClient {
     }
 
     /**
-     * Retrieves the raw panel page for one player.
+     * Asks the panel to turn a name into the UUID it keys history by.
      *
      * <p>Blocking, and called from command handling, so keep it off any thread that must
      * acknowledge a Discord interaction within its deadline.
@@ -74,15 +65,34 @@ public final class LiteBansClient {
      * @param player player name as supplied by the command user, URL-encoded before use so input
      *               cannot alter the request's path or query structure
      * @return the response body, uninterpreted markup
-     * @throws IOException on transport failure, exhausted retries, or any non-200 status. A 404 is
-     *                     an error rather than "no punishments": the panel returns a populated page
-     *                     for unknown players, so a 404 means the template is wrong and reporting a
-     *                     clean record would be a lie.
      */
-    public String fetchPunishmentPage(String player) throws IOException {
+    public String fetchNameLookup(String player) throws IOException {
         Objects.requireNonNull(player, "player");
         String encoded = URLEncoder.encode(player, StandardCharsets.UTF_8);
-        URI uri = URI.create(urlTemplate.replace(PLAYER_PLACEHOLDER, encoded));
+        return fetch(base + "check.php?name=" + encoded + "&table=bans&link=check.php");
+    }
+
+    /**
+     * Retrieves one player's punishment history.
+     *
+     * <p>Two requests rather than one, because the panel keys history by UUID and only the name
+     * lookup knows how to produce one. Nothing here interprets either page.
+     *
+     * @param uuid as returned by the name lookup, 32 hex characters
+     */
+    public String fetchPunishmentPage(String uuid) throws IOException {
+        Objects.requireNonNull(uuid, "uuid");
+        return fetch(base + "history.php?uuid=" + URLEncoder.encode(uuid, StandardCharsets.UTF_8));
+    }
+
+    /**
+     * @throws IOException on transport failure, exhausted retries, or any non-200 status. A 404 is
+     *                     an error rather than "no punishments": the panel answers an unknown name
+     *                     with a populated page, so a 404 means the URL is wrong and reporting a
+     *                     clean record would be a lie.
+     */
+    private String fetch(String url) throws IOException {
+        URI uri = URI.create(url);
 
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .GET()
