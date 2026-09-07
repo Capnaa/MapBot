@@ -131,4 +131,20 @@ class SquaremapLayerReaderTest {
         assertThrows(MalformedMarkersException.class,
                 () -> SquaremapLayerReader.readClaims("{\"not\":\"an array\"}"));
     }
+
+    @Test
+    void readsTheWorldBorderFromItsOwnLayer() throws Exception {
+        // Read from the payload the poll cycle already fetches, so the daily rebuild knows how much
+        // ground to cover without a second request or a hardcoded number that goes stale.
+        var border = SquaremapLayerReader.readWorldBorder(fixture("markers_fixture.json"));
+
+        assertTrue(border.isPresent());
+        assertTrue(border.get().width() > 1000, "a real border, not a stray point");
+    }
+
+    @Test
+    void reportsNoBorderRatherThanGuessingOne() {
+        assertTrue(SquaremapLayerReader.readWorldBorder(
+                "[{\"id\":\"lands_world\",\"markers\":[]}]").isEmpty());
+    }
 }

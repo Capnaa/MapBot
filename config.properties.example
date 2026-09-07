@@ -1,33 +1,58 @@
 # Copy to config.properties and fill in. That file is gitignored; keep it that way.
 # Secrets do NOT belong here. Bot tokens come from the environment (see .env.example).
+# Every value below is validated at startup, and every problem is reported at once.
 
 ### Discord ###
 # Main Stoneworks guild. The admin bot registers its commands here only.
 discord.guild.id=YOUR_GUILD_ID
 # Channel the bot mirrors its console output to. Blank disables mirroring.
 discord.channel.console=
-# Which bot owns the presence/status line: public or admin.
+# Which bot owns the presence line: public or admin. Both setting it would fight.
 discord.presence.owner=public
 
 ### Map data source ###
 api.markers.url=https://map.stoneworks.gg/abex/tiles/minecraft_overworld/markers.json
+# Tile root, used only by the daily base map rebuild.
+api.tiles.url=https://map.stoneworks.gg/abex/tiles/minecraft_overworld/
+# The world's zoom.max, from its settings.json. Configured rather than fetched so a rebuild
+# does not depend on a second request succeeding to interpret the first.
+map.zoom.max=3
 
-### Feature toggles (runtime-overridable; these are startup defaults) ###
-features.follows.enabled=true
-features.markets.enabled=false
-features.bans.enabled=true
-features.feedback.enabled=true
+### Ban lookups ###
+# LiteBans panel URL. Must contain the literal {player}, replaced with the URL-encoded name.
+# Leave blank to run without ban lookups.
+api.bans.url=
 
 ### Paths ###
 paths.data.dir=data
 file.basemap=basemaps/abex_base.png
+file.basemap.calibration=basemaps/basemap.properties
 
 ### Polling ###
-# One fetch per cycle for the whole process, both bots included.
+# One fetch per cycle for the whole process, both bots included. This is the entire load
+# the bot places on the map.
 monitoring.interval.minutes=1
-# Safety valve: more added+removed claims than this in one cycle is treated as a
-# partial/bad fetch and skipped rather than trusted.
+# Appearances plus disappearances beyond which a payload is treated as partial and skipped.
 monitoring.max.claim.churn=10
+# How far consecutive claim counts may differ and still count as settled. Not zero, or one
+# player claiming land mid-check would hold the bot indefinitely.
+monitoring.stability.tolerance=10
+
+### Base map rebuild ###
+# Terrain changes slowly and a rebuild is about thirty requests, so it runs once a day in a
+# quiet hour. Set the zone to whatever the server considers its own time, not the bot host's.
+basemap.rebuild.at=03:00
+basemap.rebuild.zone=America/New_York
+basemap.target.pixels=2048
+# Terrain is muted so claim colours stand out against it. 1.0 is fully grey.
+basemap.desaturation=1.0
+basemap.brightness=0.75
+
+### Feature toggles (startup defaults; changeable at runtime by an admin) ###
+features.follows.enabled=true
+features.markets.enabled=false
+features.bans.enabled=true
+features.feedback.enabled=true
 
 ### Limits ###
 max.concurrent.operations=3

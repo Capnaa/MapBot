@@ -1,5 +1,6 @@
 package gg.stoneworks.mapbot.mapdata;
 
+import gg.stoneworks.mapbot.geometry.Bbox;
 import gg.stoneworks.mapbot.model.Claim;
 import gg.stoneworks.mapbot.model.Point;
 import gg.stoneworks.mapbot.model.Rgb;
@@ -9,6 +10,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,9 @@ public final class SquaremapLayerReader {
 
     /** Layer carrying the Lands claim polygons. */
     private static final String LANDS_LAYER_ID = "lands_world";
+
+    /** squaremap publishes the border as its own layer, alongside the claims. */
+    private static final String WORLD_BORDER_LAYER_ID = "squaremap-worldborder";
 
     /** Used when a marker omits or malforms its colour, so one bad marker stays visible instead of failing the payload. */
     private static final Rgb DEFAULT_LINE = new Rgb(0, 255, 0);
@@ -88,6 +93,67 @@ public final class SquaremapLayerReader {
                     scraped.nation())));
         }
         return ClaimMerger.merge(pieces);
+    }
+
+    /**
+     * The world border, which the map publishes as its own layer.
+     *
+     * <p>Read from the same payload the poll cycle already fetches, so the daily base map rebuild
+     * knows how much ground to cover without a second request and without anyone hardcoding a
+     * number that goes stale the first time staff resize the world.
+     *
+     * @return the bounding box of the border outline, or empty if the layer is absent
+     */
+    public static Optional<Bbox> readWorldBorder(String json) {
+        JSONArray layers;
+        try {
+            layers = new JSONArray(json);
+        } catch (JSONException e) {
+            return Optional.empty();
+        }
+        for (int i = 0; i < layers.length(); i++) {
+            JSONObject layer = layers.optJSONObject(i);
+            if (layer == null || !WORLD_BORDER_LAYER_ID.equals(layer.optString("id"))) {
+                continue;
+            }
+            JSONArray markers = layer.optJSONArray("markers");
+            for (int m = 0; markers != null && m < markers.length(); m++) {
+                List<Point> corners = flatten(markers.getJSONObject(m).optJSONArray("points"));
+                if (corners.size() < 2) {
+                    continue;
+                }
+                int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+                int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+                for (Point p : corners) {
+                    minX = Math.min(minX, p.x());
+                    minZ = Math.min(minZ, p.z());
+                    maxX = Math.max(maxX, p.x());
+                    maxZ = Math.max(maxZ, p.z());
+                }
+                return Optional.of(new Bbox(minX, minZ, maxX, maxZ));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** The border arrives as a polyline, whose points may or may not be wrapped in a ring array. */
+    private static List<Point> flatten(JSONArray points) {
+        List<Point> flat = new ArrayList<>();
+        if (points == null) {
+            return flat;
+        }
+        for (int i = 0; i < points.length(); i++) {
+            JSONArray ring = points.optJSONArray(i);
+            if (ring != null) {
+                flat.addAll(flatten(ring));
+                continue;
+            }
+            JSONObject point = points.optJSONObject(i);
+            if (point != null && point.has("x") && point.has("z")) {
+                flat.add(new Point(point.getInt("x"), point.getInt("z")));
+            }
+        }
+        return flat;
     }
 
     private static JSONArray findLandsMarkers(JSONArray layers) {
